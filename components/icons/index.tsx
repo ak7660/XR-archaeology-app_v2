@@ -37,6 +37,8 @@ export { default as SpeakerIcon } from "@assets/icons/speaker.svg";
 export { default as SuccessCircleIcon } from "@assets/icons/success-circle.svg";
 export { default as TimeIcon } from "@assets/icons/time.svg";
 export { default as TimeOutlineIcon } from "@assets/icons/time-outline.svg";
+export { default as LanguageIcon } from "@assets/icons/language.svg";
+
 
 import { ViewProps } from "react-native";
 import { SvgProps } from "react-native-svg";
