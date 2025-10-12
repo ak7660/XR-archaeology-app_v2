@@ -2,6 +2,7 @@ import { AppBar, MainBody, ListItem, ListItemProps, NAVBAR_HEIGHT } from "@/comp
 import { SearchInput } from "@/components/common/search";
 import { Attraction, AttractionType } from "@/models";
 import { useFeathers, Paginated } from "@/providers/feathers_provider";
+import { useLanguage } from "@/providers/language_provider";
 import { useAppTheme } from "@/providers/style_provider";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -28,6 +29,7 @@ const mappingDesc: Record<AttractionType, { title: string; desc?: string }> = {
 export default function Page() {
   const feathers = useFeathers();
   const { theme } = useAppTheme();
+  const { language, getLocalizedText } = useLanguage();
   /**
    * @property {string} id refers to the _id of model
    * @property {string} service refers to the feathers api service's name
@@ -56,15 +58,16 @@ export default function Page() {
     init();
   }, []);
 
-  const searched_list =  useMemo(() => {
-    const search_text = search.trim();
+  const searched_list = useMemo(() => {
+    const search_text = search.trim().toLowerCase();
     if (!search_text.length) {
       return attractions.slice();
     }
-    return attractions.filter(attraction => {
-      return attraction.name.toLowerCase().includes(search_text.toLowerCase())
-    })
-  }, [search, attractions])
+    return attractions.filter((attraction) => {
+      const attractionName = attraction.name[language] ?? attraction.name.en;
+      return attractionName.toLowerCase().includes(search_text);
+    });
+  }, [search, attractions, language]);
 
   async function syncData() {
     if (cursor.current != 0 && cursor.current >= total.current) return;
@@ -73,10 +76,10 @@ export default function Page() {
       const res: Paginated<Attraction> = await feathers.service("attractions").find({
         query: query,
       });
-  
+
       if (res.total != total.current) total.current = res.total;
       let count: number = res.data.length;
-  
+
       setAttractions((items) => [...items, ...res.data]);
       cursor.current += count;
     }
@@ -121,7 +124,7 @@ export default function Page() {
         contentContainerStyle={{ flexGrow: 1, paddingBottom: NAVBAR_HEIGHT + theme.spacing.lg }}
         contentInset={{ bottom: theme.spacing.lg }}
         renderItem={({ item }) => {
-          let brief = item.briefDesc;
+          let brief = getLocalizedText(item.briefDesc);
 
           if (brief && item.contact) brief += `\nContact no.: ${item.contact}`;
           const props: ListItemProps = {

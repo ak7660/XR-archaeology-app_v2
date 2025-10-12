@@ -1,4 +1,5 @@
 import { Model } from "./utils";
+import { MultilingualText } from "./attraction";
 
 export class File {
   object!: string;
@@ -7,9 +8,9 @@ export class File {
 }
 
 export class Artifact extends Model {
-  name!: string;
+  name!: string | MultilingualText;
   image?: string;
-  desc?: string;
+  desc?: string | MultilingualText;
   location?: string;
   date?: string;
   tags?: string;

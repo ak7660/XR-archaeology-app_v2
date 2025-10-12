@@ -49,7 +49,7 @@ export default function SettingsPage() {
           {authenticated && <AccountListItem label="Profile" prefix="profile" onPress={() => router.push(Routes.Profile)} />}
           <AccountListItem label="Settings" prefix="setting" onPress={() => router.push(Routes.Settings)} />
           <AccountListItem label="Help and feedback" prefix="help" />
-          <AccountListItem label="Language"  prefix="language" />
+          <AccountListItem label="Language" prefix="language" onPress={() => router.push(Routes.Language)} />
         </View>
         <View style={{ padding: theme.spacing.lg }}>
           <Button

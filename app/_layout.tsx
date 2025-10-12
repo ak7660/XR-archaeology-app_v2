@@ -8,6 +8,7 @@ import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { AuthProvider } from "@providers/auth_provider";
 import { FeathersProvider } from "@providers/feathers_provider";
 import { StyleProvider, useAppTheme } from "@providers/style_provider";
+import { LanguageProvider } from "@providers/language_provider";
 import { useAppStore } from '@/app/state/app';
 import { observer } from "mobx-react-lite";
 
@@ -16,17 +17,19 @@ export default function RootLayout() {
   if (!loadedFont) return null;
   return (
     <StyleProvider>
-      <SafeAreaProvider>
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <BottomSheetModalProvider>
-            <FeathersProvider>
-              <AuthProvider>
-                <StackLayout />
-              </AuthProvider>
-            </FeathersProvider>
-          </BottomSheetModalProvider>
-        </GestureHandlerRootView>
-      </SafeAreaProvider>
+      <LanguageProvider>
+        <SafeAreaProvider>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <BottomSheetModalProvider>
+              <FeathersProvider>
+                <AuthProvider>
+                  <StackLayout />
+                </AuthProvider>
+              </FeathersProvider>
+            </BottomSheetModalProvider>
+          </GestureHandlerRootView>
+        </SafeAreaProvider>
+      </LanguageProvider>
     </StyleProvider>
   );
 }

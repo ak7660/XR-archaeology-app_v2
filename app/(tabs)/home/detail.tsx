@@ -1,9 +1,9 @@
 import { AppBar, Carousel, ContentItem, ErrorPage, LoadingPage, MainBody, NAVBAR_HEIGHT } from "@/components";
 import MapPreview from "@/components/map/map_preview";
-import { BookmarkOutlineIcon, CompassIcon, LocationIcon } from "@components/icons";
-import { Attraction, GeoPoint, Tag } from "@models";
-import { useFeathers } from "@providers/feathers_provider";
-import { AppTheme, useAppTheme } from "@providers/style_provider";
+import { BookmarkOutlineIcon, CompassIcon, LocationIcon } from "@/components/icons";
+import { Attraction, GeoPoint, Tag } from "@/models";
+import { useFeathers } from "@/providers/feathers_provider";
+import { AppTheme, useAppTheme } from "@/providers/style_provider";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { Alert, StyleSheet, View, useWindowDimensions } from "react-native";
@@ -13,12 +13,14 @@ import * as Location from "expo-location";
 import { distanceFromLatLonInKm } from "@/plugins/geolocation";
 import { LatLng } from "react-native-maps";
 import { Routes } from "@/app/composable/routes";
+import { useLocalizedText } from "@/hooks/useLocalizedText";
 
 export default function Page() {
   const feathers = useFeathers();
   const { theme } = useAppTheme();
   const { width: screenWidth } = useWindowDimensions();
   const style = useStyle({ theme, screenWidth });
+  const localize = useLocalizedText();
   /**
    * @property {string} id refers to the _id of model
    * @property {string} service refers to the feathers api service's name
@@ -74,19 +76,19 @@ export default function Page() {
 
           <View style={style.topSection}>
             <Text variant="headlineSmall" style={{ color: theme.colors.text }}>
-              {item.name}
+              {localize(item.name)}
             </Text>
             {item.tags && item.tags.length > 0 && (
               <Text style={{ color: theme.colors.primary }}>{item.tags?.map((tag) => (tag as Tag).name).join(", ")}</Text>
             )}
             {item.desc ? (
               <Text variant="bodyMedium" style={{ color: theme.colors.text }}>
-                {item.desc}
+                {localize(item.desc)}
               </Text>
             ) : (
               item.briefDesc && (
                 <Text variant="bodyMedium" style={{ color: theme.colors.text }}>
-                  {item.briefDesc}
+                  {localize(item.briefDesc)}
                 </Text>
               )
             )}

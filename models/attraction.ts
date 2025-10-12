@@ -11,10 +11,15 @@ export class OpenHour {
 
 export type AttractionType = "Attraction" | "Restaurant" | "Lodging" | "Other";
 
+export interface MultilingualText {
+  en: string;
+  hy?: string;
+}
+
 export class Attraction extends Model {
-  name: string;
-  briefDesc?: string;
-  desc?: string;
+  name: MultilingualText;
+  briefDesc?: MultilingualText;
+  desc?: MultilingualText;
   content?: Content[];
   thumbnails?: string[];
   contact?: string;

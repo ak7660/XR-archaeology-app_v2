@@ -6,15 +6,20 @@ import moment from "moment";
 import { Image, Pressable, StyleSheet, View } from "react-native";
 import { Text } from "react-native-paper";
 import { Routes } from "@/app/composable/routes";
+import { useLocalizedText } from "@/hooks/useLocalizedText";
 
 const IMAGE_WIDTH = 120;
 const LABEL_WIDTH = 64;
 
 export default function EventItem({ _id, name, briefDesc, images, startDate, endDate, ...props }: Event) {
-  const { theme } = useAppTheme();
-  const style = useStyle({ theme });
-  const image: string | undefined = images?.[0];
-
+    const { theme } = useAppTheme();
+    const style = useStyle({ theme });
+    const localize = useLocalizedText();
+    const image: string | undefined = images?.[0];
+  
+    // Handle multilingual text
+    const localizedName = typeof name === 'string' ? name : localize(name);
+    const localizedBriefDesc = typeof briefDesc === 'string' ? briefDesc : localize(briefDesc);
   function getDateLabel(date: Date) {
     if (!date) return <></>;
     return (
@@ -42,10 +47,10 @@ export default function EventItem({ _id, name, briefDesc, images, startDate, end
           )}
           <View style={[style.content, { marginLeft: image ? IMAGE_WIDTH : LABEL_WIDTH + theme.spacing.md }]}>
             <Text variant="labelLarge" style={{ color: theme.colors.text }}>
-              {name}
+              {localizedName}
             </Text>
             <Text variant="bodyMedium" style={{ color: theme.colors.text }}>
-              {briefDesc}
+              {localizedBriefDesc}
             </Text>
           </View>
           <View style={style.dateStack}>

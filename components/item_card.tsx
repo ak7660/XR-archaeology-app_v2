@@ -1,10 +1,11 @@
 import { Text, Card } from "react-native-paper";
 import { View, GestureResponderEvent, StyleSheet, ViewStyle } from "react-native";
 import { TimeIcon, LocationIcon } from "@components/icons";
-import { Artifact } from "@models";
+import { Artifact, MultilingualText } from "@models";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useAppTheme } from "@providers/style_provider";
+import { useLocalizedText } from "@/hooks/useLocalizedText";
 
 export interface Props {
   onPress?: (e: GestureResponderEvent) => void;
@@ -14,10 +15,13 @@ export interface Props {
   style?: ViewStyle;
 }
 export default (props: Props) => {
-  const { theme } = useAppTheme();
-  const { item, onPress, onLongPress, style } = props;
-  const imageUri = item.image ?? require("@assets/images/demo_item.png");
-
+    const { theme } = useAppTheme();
+    const localize = useLocalizedText();
+    const { item, onPress, onLongPress, style } = props;
+    const imageUri = item.image ?? require("@assets/images/demo_item.png");
+  
+    // Handle multilingual text for artifact name
+    const localizedName = typeof item.name === 'string' ? item.name : localize(item.name);
   return (
     <Card
       mode="contained"
@@ -39,7 +43,7 @@ export default (props: Props) => {
           style={[_style.cardContext, { paddingVertical: theme.spacing.sm, paddingHorizontal: theme.spacing.md }]}
         >
           <Text variant="titleSmall" numberOfLines={2}>
-            {item.name}
+            {localizedName}
           </Text>
           <View style={_style.wrapper}>
             {item.location && (

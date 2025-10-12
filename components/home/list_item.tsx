@@ -6,12 +6,13 @@ import { Image, StyleSheet, View } from "react-native";
 import { Text, TouchableRipple } from "react-native-paper";
 import IconBtn from "../icon_btn";
 import { Href } from "expo-router/build/link/href";
-import { Tag } from "@/models";
+import { Tag, MultilingualText } from "@/models";
 import { Routes } from "@/app/composable/routes";
+import { useLocalizedText } from "@/hooks/useLocalizedText";
 
 export interface Props {
-  name: string;
-  briefDesc?: string;
+  name: string | MultilingualText;
+  briefDesc?: string | MultilingualText;
   images?: string[] | number[];
   href?: Href;
   onPress?: () => void;
@@ -26,6 +27,12 @@ export interface Props {
 export default function ListItem({ name, briefDesc, images, href, showNavigate, latitude, longitude, ...props }: Props) {
   const { theme } = useAppTheme();
   const style = useStyle({ theme });
+  
+  const localize = useLocalizedText();
+
+  // Handle multilingual text
+  const localizedName = typeof name === 'string' ? name : localize(name);
+  const localizedBriefDesc = typeof briefDesc === 'string' ? briefDesc : localize(briefDesc);
 
   const onPress = useCallback(() => {
     if (href) {
@@ -109,11 +116,11 @@ export default function ListItem({ name, briefDesc, images, href, showNavigate, 
                 }}
               >
                 <Text variant="labelLarge" style={{ color: theme.colors.text }}>
-                  {name}
+                  {localizedName}
                 </Text>
-                {briefDesc && (
+                {localizedBriefDesc && (
                   <Text variant="bodyMedium" style={{ color: theme.colors.text }}>
-                    {briefDesc}
+                    {localizedBriefDesc}
                   </Text>
                 )}
                 {tags.length > 0 && (

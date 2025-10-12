@@ -1,10 +1,10 @@
-import { Attraction } from "./attraction";
+import { Attraction, MultilingualText } from "./attraction";
 import { Model } from "./utils";
 
 export class Event extends Model {
-  name: string;
-  briefDesc?: string;
-  content?: string;
+  name: string | MultilingualText;
+  briefDesc?: string | MultilingualText;
+  content?: string | MultilingualText;
   images?: string[];
 
   venue?: string | Attraction;

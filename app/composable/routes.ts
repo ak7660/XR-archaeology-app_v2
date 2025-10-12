@@ -11,6 +11,7 @@ export enum Routes {
   Account = '/account',
   Profile = '/account/profile',
   Settings = '/account/settings',
+  Language = '/account/language',
   History = '/home/history',
 
   // list views
