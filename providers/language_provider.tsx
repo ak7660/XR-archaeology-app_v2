@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import * as SecureStore from "expo-secure-store";
 
-export type LanguageEnum = "en" | "hy";
+export type LanguageEnum = "en" | "hy" | "ru";
 
 interface LanguageState {
   language: LanguageEnum;

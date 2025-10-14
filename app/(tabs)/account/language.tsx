@@ -16,9 +16,10 @@ export default function LanguageSelectionPage() {
   const languages = [
     { code: "en" as const, name: "English", nativeName: "English" },
     { code: "hy" as const, name: "Armenian", nativeName: "Հայերեն" },
+    { code: "ru" as const, name: "Russian", nativeName: "Русский" },
   ];
 
-  function handleLanguageChange(languageCode: "en" | "hy") {
+  function handleLanguageChange(languageCode: "en" | "hy" | "ru") {
     setLanguage(languageCode);
   }
 

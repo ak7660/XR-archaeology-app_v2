@@ -14,6 +14,7 @@ export type AttractionType = "Attraction" | "Restaurant" | "Lodging" | "Other";
 export interface MultilingualText {
   en: string;
   hy?: string;
+  ru?: string;
 }
 
 export class Attraction extends Model {
