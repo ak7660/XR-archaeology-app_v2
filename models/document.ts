@@ -1,7 +1,8 @@
+import { MultilingualText } from "./attraction";
 import { Content, Model } from "./utils";
 
 export class Document extends Model {
-  name: string;
+  name: MultilingualText;
   content: Content[];
   order: number;
   createdAt: Date;
