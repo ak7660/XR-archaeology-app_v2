@@ -9,6 +9,7 @@ import ExploreItem from "@components/map/explore_item";
 import ExploreModal from "@components/map/explore_modal";
 import Animated, { useAnimatedStyle, withTiming } from "react-native-reanimated";
 import { useAppTheme } from "@providers/style_provider";
+import { useLanguage } from "@/providers/language_provider";
 import { Paginated, useFeathers } from "@/providers/feathers_provider";
 import { Location, Route } from "@/models";
 import { getCurrentPositionAsync } from "expo-location";
@@ -19,6 +20,7 @@ const ITEM_SPACING = 10;
 
 export default function Explore() {
   const { theme } = useAppTheme();
+  const { getLocalizedText } = useLanguage();
   const feathers = useFeathers();
 
   const { id, routeId, latitude, longitude } = useLocalSearchParams<{ id?: string; routeId?: string; latitude?: string; longitude?: string }>();
@@ -127,7 +129,7 @@ export default function Explore() {
 
   return (
     <MainBody padding={{ top: 0, bottom: NAVBAR_HEIGHT, right: 0, left: 0 }}>
-      <AppBar showBack title={route?.name || ""} />
+      <AppBar showBack title={getLocalizedText(route?.name) || ""} />
       {loaded ? (
         route ? (
           <View style={{ position: "relative", width: "100%", height: "100%" }}>
@@ -157,7 +159,7 @@ export default function Explore() {
                   onCalloutPress={() => setDetailOpen(true)}
                   zIndex={10}
                 >
-                  <MarkerCallout title={point.name} desc={point.desc} image={point.images?.[0]} />
+                  <MarkerCallout title={getLocalizedText(point.name)} desc={getLocalizedText(point.desc)} image={point.images?.[0]} />
                 </Marker>
               ))}
             </MapView>

@@ -1,6 +1,7 @@
 import { AppBar, Carousel, ContentItem, ErrorPage, IconBtn, LoadingPage, MainBody, NAVBAR_HEIGHT } from "@/components";
 import { BookmarkOutlineIcon } from "@components/icons";
 import { useFeathers } from "@providers/feathers_provider";
+import { useLanguage } from "@/providers/language_provider";
 import { AppTheme, useAppTheme } from "@providers/style_provider";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
@@ -12,6 +13,7 @@ import { ExperienceItem } from "@/models/experience";
 export default function Page() {
   const feathers = useFeathers();
   const { theme } = useAppTheme();
+  const { getLocalizedText } = useLanguage();
   const { width: screenWidth } = useWindowDimensions();
   const style = useStyle({ theme, screenWidth });
   /**
@@ -42,7 +44,7 @@ export default function Page() {
     <MainBody padding={{ top: 0 }}>
       <AppBar
         showBack
-        title={item?.name ?? "WorkShop"}
+        title={getLocalizedText(item?.name) ?? "WorkShop"}
         actions={[{ icon: (props) => <BookmarkOutlineIcon fill={props.color} size={props.size} /> }]}
       />
       {!loaded ? (
@@ -53,7 +55,7 @@ export default function Page() {
 
           <View style={style.topSection}>
             <Text variant="headlineSmall" style={{ color: theme.colors.text }}>
-              {item.name}
+              {getLocalizedText(item.name)}
             </Text>
             {item.language || item.duration ? (
               <Text style={{ color: theme.colors.primary }}>
@@ -62,12 +64,12 @@ export default function Page() {
             ) : null}
             {item.desc ? (
               <Text variant="bodyMedium" style={{ color: theme.colors.text }}>
-                {item.desc}
+                {getLocalizedText(item.desc)}
               </Text>
             ) : (
               item.briefDesc && (
                 <Text variant="bodyMedium" style={{ color: theme.colors.text }}>
-                  {item.briefDesc}
+                  {getLocalizedText(item.briefDesc)}
                 </Text>
               )
             )}

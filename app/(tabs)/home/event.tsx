@@ -3,6 +3,7 @@ import { CalendarIcon, CalendarOutlinedIcon, LocationIcon, ProfileIcon } from "@
 import { Event } from "@/models";
 import { useAuth } from "@/providers/auth_provider";
 import { useFeathers } from "@/providers/feathers_provider";
+import { useLanguage } from "@/providers/language_provider";
 import { AppTheme, useAppTheme } from "@/providers/style_provider";
 import { useLocalSearchParams } from "expo-router";
 import moment from "moment";
@@ -15,6 +16,7 @@ export default function Page() {
   const feathers = useFeathers();
   const { user } = useAuth();
   const { theme } = useAppTheme();
+  const { getLocalizedText } = useLanguage();
   const style = useStyle({ theme });
 
   const [event, setEvent] = useState<Event>();
@@ -35,9 +37,9 @@ export default function Page() {
         //   fetch venue name if $populate not working
         if (typeof res.venue === "string") {
           const venue = await feathers.service("attractions").get(res.venue, { query: { $select: ["name"] } });
-          setVenueName(venue.name);
+          setVenueName(getLocalizedText(venue.name));
         } else {
-          setVenueName(res.venue?.name);
+          setVenueName(getLocalizedText(res.venue?.name));
         }
       } catch (error) {
         console.warn(error);
@@ -76,16 +78,16 @@ export default function Page() {
           {event.images && <Carousel images={event.images} />}
           <View style={style.topSection}>
             <Text variant="headlineSmall" style={{ color: theme.colors.text }}>
-              {event.name}
+              {getLocalizedText(event.name)}
             </Text>
             {event.content ? (
               <Text variant="bodyMedium" style={{ color: theme.colors.text }}>
-                {event.content}
+                {getLocalizedText(event.content)}
               </Text>
             ) : (
               event.briefDesc && (
                 <Text variant="bodyMedium" style={{ color: theme.colors.text }}>
-                  {event.briefDesc}
+                  {getLocalizedText(event.briefDesc)}
                 </Text>
               )
             )}

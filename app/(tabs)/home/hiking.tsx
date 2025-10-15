@@ -1,6 +1,7 @@
 import { Routes } from "@/app/composable/routes";
 import { Route } from "@/models";
 import { Paginated, useFeathers } from "@/providers/feathers_provider";
+import { useLanguage } from "@/providers/language_provider";
 import { useAppTheme } from "@/providers/style_provider";
 import { AppBar, ListItem, ListItemProps, MainBody, NAVBAR_HEIGHT } from "@components";
 import { useEffect, useRef, useState } from "react";
@@ -10,6 +11,7 @@ import { ActivityIndicator, Text } from "react-native-paper";
 export default function Page() {
   const feathers = useFeathers();
   const { theme } = useAppTheme();
+  const { getLocalizedText } = useLanguage();
   const [routes, setRoutes] = useState<Route[]>([]);
   /** initial loading */
   const [loaded, setLoaded] = useState(false);
@@ -72,8 +74,8 @@ export default function Page() {
         contentInset={{ bottom: theme.spacing.lg }}
         renderItem={({ item }) => {
           const props: ListItemProps = {
-            name: item.name,
-            briefDesc: item.briefDesc,
+            name: getLocalizedText(item.name),
+            briefDesc: getLocalizedText(item.briefDesc),
             images: item.thumbnails,
             href: {
               pathname: Routes.Route,

@@ -5,6 +5,7 @@ import { Location, Route } from "@/models";
 import { distanceFromLatLonInKm } from "@/plugins/geolocation";
 import { getThumb } from "@/plugins/utils";
 import { Paginated, useFeathers } from "@/providers/feathers_provider";
+import { useLanguage } from "@/providers/language_provider";
 import { AppTheme, useAppTheme } from "@/providers/style_provider";
 import { router, useLocalSearchParams } from "expo-router";
 import _ from "lodash";
@@ -18,6 +19,7 @@ import { Tts } from "@/components/common/tts";
 export default function Page() {
   const feathers = useFeathers();
   const { theme } = useAppTheme();
+  const { getLocalizedText } = useLanguage();
   const { width: screenWidth } = useWindowDimensions();
   const style = useStyle({ theme, screenWidth });
   /**
@@ -114,7 +116,7 @@ export default function Page() {
       <>
         <View style={{ top: theme.spacing.lg, right: theme.spacing.lg, left: theme.spacing.lg, position: "absolute" }}>
           <Text variant="headlineMedium" style={{ color: theme.colors.white, textShadowOffset: { width: 0, height: 2 }, textShadowColor: "black" }}>
-            {route.name}
+            {getLocalizedText(route.name)}
           </Text>
         </View>
         <View style={{ bottom: theme.spacing.xs, left: theme.spacing.lg, right: theme.spacing.xl, position: "absolute" }}>
@@ -163,7 +165,7 @@ export default function Page() {
             variant="bodyMedium"
             style={{ color: theme.colors.text, paddingHorizontal: theme.spacing.lg, paddingTop: theme.spacing.sm, paddingBottom: theme.spacing.xl }}
           >
-            {route.desc}
+            {getLocalizedText(route.desc)}
           </Text>
 
           {points && points.length ? (
@@ -225,7 +227,7 @@ export default function Page() {
                       }}
                     >
                       <Text variant="titleMedium" style={{ color: theme.colors.text, flexGrow: 1, flexShrink: 1 }}>
-                        {index + 1}. {point.name}
+                        {index + 1}. {getLocalizedText(point.name)}
                       </Text>
                       <Button
                         mode="contained"
@@ -245,7 +247,7 @@ export default function Page() {
 
                     {point.images && <Carousel images={point.images} />}
                     {point.desc && <Tts
-                      text={point.desc}
+                      text={getLocalizedText(point.desc)}
                       variant="bodyMedium"
                       style={{
                         color: theme.colors.text,
