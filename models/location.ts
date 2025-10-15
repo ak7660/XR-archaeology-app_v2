@@ -20,6 +20,7 @@ export class Location extends Model {
 export type DifficultyLevel = "Easy" | "Moderate" | "Difficult";
 export class Route extends Model {
   name!: MultilingualText;
+  briefDesc?: MultilingualText;
   desc?: MultilingualText;
   content?: Content[];
   thumbnails?: string[];
