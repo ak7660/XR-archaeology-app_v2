@@ -1,9 +1,10 @@
+import { MultilingualText } from "./attraction";
 import { Content, Model } from "./utils";
 
 export class ExperienceItem extends Model {
-  name: string;
-  briefDesc: string;
-  desc: string;
+  name: MultilingualText;
+  briefDesc: MultilingualText;
+  desc: MultilingualText;
   images: string[];
   content: Content[];
   contactText: string;

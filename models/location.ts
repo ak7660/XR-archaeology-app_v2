@@ -1,4 +1,5 @@
 import { LatLng } from "react-native-maps";
+import { MultilingualText } from "./attraction";
 import { Content, Model } from "./utils";
 
 export interface GeoPoint extends Model, LatLng {
@@ -6,8 +7,8 @@ export interface GeoPoint extends Model, LatLng {
 }
 
 export class Location extends Model {
-  name!: string;
-  desc?: string;
+  name!: MultilingualText;
+  desc?: MultilingualText;
   latitude!: number;
   longitude!: number;
   images?: string[];
@@ -18,9 +19,8 @@ export class Location extends Model {
 
 export type DifficultyLevel = "Easy" | "Moderate" | "Difficult";
 export class Route extends Model {
-  name!: string;
-  briefDesc?: string;
-  desc?: string;
+  name!: MultilingualText;
+  desc?: MultilingualText;
   content?: Content[];
   thumbnails?: string[];
   difficulty: DifficultyLevel = "Moderate";
