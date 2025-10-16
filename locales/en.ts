@@ -67,6 +67,15 @@ export const en = {
     foodAndLodging: "Food & Lodging",
     culinaryDelights: "Culinary Delights",
     virtualReconstruction: "Virtual reconstruction",
+    restaurants: "Restaurants",
+    accommodations: "Accommodations",
+  },
+
+  // Navigation tabs
+  tabs: {
+    home: "Home",
+    map: "Map",
+    account: "Account",
   },
 
   // AR (Augmented Reality) features

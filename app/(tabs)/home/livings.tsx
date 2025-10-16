@@ -27,8 +27,8 @@ export default function Page() {
   const { t } = useTranslation();
   const params = useLocalSearchParams<{type: string}>();
   const tabRoutes = [
-    { key: "Resturants", title: "Resturants" },
-    { key: "Accommodations", title: "Accommodations" },
+    { key: "Resturants", title: t("home.restaurants") },
+    { key: "Accommodations", title: t("home.accommodations") },
   ];
   const [tabIndex, setTabIndex] = useState(tabRoutes.findIndex(tab => tab.key === params?.type) ?? 0);
 

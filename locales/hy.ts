@@ -69,6 +69,15 @@ export const hy: Translations = {
     foodAndLodging: "Սնունդ և կացարան",
     culinaryDelights: "Խոհարարական հաճույքներ",
     virtualReconstruction: "Վիրտուալ վերակառուցում",
+    restaurants: "Ռեստորաններ",
+    accommodations: "Կացարան",
+  },
+
+  // Navigation tabs
+  tabs: {
+    home: "Գլխավոր",
+    map: "Քարտեզ",
+    account: "Հաշիվ",
   },
 
   // AR (Augmented Reality) features

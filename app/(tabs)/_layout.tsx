@@ -2,8 +2,11 @@ import { NavBar } from "@components";
 import { Tabs } from "expo-router/tabs";
 import { HomeIcon, ExploreIcon, SettingIcon } from "@components/icons";
 import { Routes } from "../composable/routes";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function TabLayout() {
+  const { t } = useTranslation();
+  
   return (
     <Tabs
       screenOptions={{
@@ -17,7 +20,7 @@ export default function TabLayout() {
         name="home"
         options={{
           href: Routes.Home,
-          tabBarLabel: "Home",
+          tabBarLabel: t("tabs.home"),
           tabBarIcon: ({ color, size }) => <HomeIcon fill={color} size={size} />,
         }}
       />
@@ -25,7 +28,7 @@ export default function TabLayout() {
         name="map"
         options={{
           href: Routes.Map,
-          tabBarLabel: "Map",
+          tabBarLabel: t("tabs.map"),
           tabBarIcon: ({ color, size }) => <ExploreIcon fill={color} size={size} />,
         }}
       />
@@ -33,7 +36,7 @@ export default function TabLayout() {
         name="account"
         options={{
           href: Routes.Account,
-          tabBarLabel: "Account",
+          tabBarLabel: t("tabs.account"),
           tabBarIcon: ({ color, size }) => <SettingIcon fill={color} size={size} />,
         }}
       />

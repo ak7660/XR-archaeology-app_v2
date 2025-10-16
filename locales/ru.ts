@@ -69,6 +69,15 @@ export const ru: Translations = {
     foodAndLodging: "Еда и жильё",
     culinaryDelights: "Кулинарные изыски",
     virtualReconstruction: "Виртуальная реконструкция",
+    restaurants: "Рестораны",
+    accommodations: "Проживание",
+  },
+
+  // Navigation tabs
+  tabs: {
+    home: "Главная",
+    map: "Карта",
+    account: "Аккаунт",
   },
 
   // AR (Augmented Reality) features
