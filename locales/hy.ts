@@ -71,6 +71,7 @@ export const hy: Translations = {
     virtualReconstruction: "Վիրտուալ վերակառուցում",
     restaurants: "Ռեստորաններ",
     accommodations: "Կացարան",
+    welcomeToVedi: "Բարի գալուստ\nՎեդու գետահովիտ!",
   },
 
   // Navigation tabs

@@ -87,7 +87,7 @@ export default function Home() {
           }}
         >
           <Text variant="titleMedium" style={{ color: theme.colors.background, paddingBottom: theme.spacing.xs }}>
-            {`Welcome to \nthe Vedi River Valley!`}
+            {t("home.welcomeToVedi")}
           </Text>
 
           <IconBtn

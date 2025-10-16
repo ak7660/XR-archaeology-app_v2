@@ -71,6 +71,7 @@ export const ru: Translations = {
     virtualReconstruction: "Виртуальная реконструкция",
     restaurants: "Рестораны",
     accommodations: "Проживание",
+    welcomeToVedi: "Добро пожаловать\nв долину реки Веди!",
   },
 
   // Navigation tabs

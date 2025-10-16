@@ -69,6 +69,7 @@ export const en = {
     virtualReconstruction: "Virtual reconstruction",
     restaurants: "Restaurants",
     accommodations: "Accommodations",
+    welcomeToVedi: "Welcome to\nthe Vedi River Valley!",
   },
 
   // Navigation tabs
