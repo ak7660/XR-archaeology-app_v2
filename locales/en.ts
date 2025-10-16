@@ -25,6 +25,7 @@ export const en = {
     close: "Close",
     yes: "Yes",
     no: "No",
+    others: "Others",
   },
 
   // Authentication screens
@@ -60,6 +61,12 @@ export const en = {
     events: "Events",
     welcome: "Welcome",
     explore: "Explore",
+    greatOutdoors: "Great Outdoors",
+    greatWorkshop: "Great Workshop",
+    transportation: "Transportation",
+    foodAndLodging: "Food & Lodging",
+    culinaryDelights: "Culinary Delights",
+    virtualReconstruction: "Virtual reconstruction",
   },
 
   // AR (Augmented Reality) features

@@ -27,6 +27,7 @@ export const hy: Translations = {
     close: "Փակել",
     yes: "Այո",
     no: "Ոչ",
+    others: "Այլ",
   },
 
   // Authentication screens
@@ -62,6 +63,12 @@ export const hy: Translations = {
     events: "Միջոցառումներ",
     welcome: "Բարի գալուստ",
     explore: "Ուսումնասիրել",
+    greatOutdoors: "Հիանալի բնություն",
+    greatWorkshop: "Հիանալի վարպետության դաս",
+    transportation: "Տրանսպորտ",
+    foodAndLodging: "Սնունդ և կացարան",
+    culinaryDelights: "Խոհարարական հաճույքներ",
+    virtualReconstruction: "Վիրտուալ վերակառուցում",
   },
 
   // AR (Augmented Reality) features

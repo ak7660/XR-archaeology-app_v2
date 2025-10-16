@@ -1,10 +1,12 @@
 import { AppBar, MainBody, NAVBAR_HEIGHT, IconBtn } from "@/components";
 import { SimpleTable } from "@/components/common/table";
 import { AppTheme, useAppTheme } from "@/providers/style_provider";
+import { useTranslation } from "@/hooks/useTranslation";
 import { ScrollView, StyleSheet } from "react-native";
 import { Text, DataTable } from "react-native-paper";
 export default function Page() {
   const { theme } = useAppTheme();
+  const { t } = useTranslation();
   const style = useStyle({ theme });
 
   const stops_data = [
@@ -18,7 +20,7 @@ export default function Page() {
 
   return (
     <MainBody padding={{ top: 0 }}>
-      <AppBar title="Transportation" showBack />
+      <AppBar title={t("home.transportation")} showBack />
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: NAVBAR_HEIGHT + theme.spacing.md }}>
         <Text style={style.text}>Bus schedule from Urtsadzor to Yerevan: </Text>
         <SimpleTable heading={['From Urtsadzor', 'From Yerevan']} data={[

@@ -4,6 +4,7 @@ import { Attraction, OpenHour, Weekday } from "@/models";
 import { Paginated, useFeathers } from "@/providers/feathers_provider";
 import { AppTheme, useAppTheme } from "@/providers/style_provider";
 import { useLocalizedText } from "@/hooks/useLocalizedText";
+import { useTranslation } from "@/hooks/useTranslation";
 import { Link, useLocalSearchParams } from "expo-router";
 import _ from "lodash";
 import moment from "moment";
@@ -23,6 +24,7 @@ export default function Page() {
   const style = useStyle({ theme });
   const feathers = useFeathers();
   const localize = useLocalizedText();
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{type: string}>();
   const tabRoutes = [
     { key: "Resturants", title: "Resturants" },
@@ -182,7 +184,7 @@ export default function Page() {
 
   return (
     <MainBody padding={{ top: 0 }}>
-      <AppBar showBack title="Food & Lodging" />
+      <AppBar showBack title={t("home.foodAndLodging")} />
       <TabView
         navigationState={{ index: tabIndex, routes: tabRoutes }}
         renderScene={renderScene}

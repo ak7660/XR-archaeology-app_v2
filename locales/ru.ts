@@ -27,6 +27,7 @@ export const ru: Translations = {
     close: "Закрыть",
     yes: "Да",
     no: "Нет",
+    others: "Другое",
   },
 
   // Authentication screens
@@ -62,6 +63,12 @@ export const ru: Translations = {
     events: "События",
     welcome: "Добро пожаловать",
     explore: "Исследовать",
+    greatOutdoors: "Отличный отдых на природе",
+    greatWorkshop: "Отличные мастер-классы",
+    transportation: "Транспорт",
+    foodAndLodging: "Еда и жильё",
+    culinaryDelights: "Кулинарные изыски",
+    virtualReconstruction: "Виртуальная реконструкция",
   },
 
   // AR (Augmented Reality) features

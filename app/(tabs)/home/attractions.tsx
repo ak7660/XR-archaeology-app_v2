@@ -4,30 +4,15 @@ import { Attraction, AttractionType } from "@/models";
 import { useFeathers, Paginated } from "@/providers/feathers_provider";
 import { useLanguage } from "@/providers/language_provider";
 import { useAppTheme } from "@/providers/style_provider";
+import { useTranslation } from "@/hooks/useTranslation";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FlatList, View } from "react-native";
 import { ActivityIndicator, Text } from "react-native-paper";
 
-const mappingDesc: Record<AttractionType, { title: string; desc?: string }> = {
-  Attraction: {
-    title: "Attractions",
-    desc: "Vedi is know for its rich history, culture and tradition",
-  },
-  Restaurant: {
-    title: "Culinary Delights",
-    desc: "Armenian cuisine is known for its rich flavours and unique combinations of ingredients",
-  },
-  Lodging: {
-    title: "Lodging",
-  },
-  Other: {
-    title: "Others",
-  },
-};
-
 export default function Page() {
   const feathers = useFeathers();
+  const { t } = useTranslation();
   const { theme } = useAppTheme();
   const { language, getLocalizedText } = useLanguage();
   /**
@@ -35,6 +20,22 @@ export default function Page() {
    * @property {string} service refers to the feathers api service's name
    */
   const { type = "Attraction" } = useLocalSearchParams<{ type?: AttractionType }>();
+
+  // Get translated title based on attraction type
+  const getTitle = (attractionType: AttractionType): string => {
+    switch (attractionType) {
+      case "Attraction":
+        return t("home.attractions");
+      case "Restaurant":
+        return t("home.culinaryDelights");
+      case "Lodging":
+        return t("home.lodgings");
+      case "Other":
+        return t("common.others");
+      default:
+        return t("home.attractions");
+    }
+  };
 
   const [attractions, setAttractions] = useState<Attraction[]>([]);
   /** initial loading */
@@ -113,7 +114,7 @@ export default function Page() {
 
   return (
     <MainBody padding={{ top: 0 }}>
-      <AppBar title={mappingDesc[type].title} showBack />
+      <AppBar title={getTitle(type)} showBack />
       <FlatList
         onScroll={onScroll}
         onEndReached={loadMore}

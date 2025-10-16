@@ -3,6 +3,7 @@ import { ExperienceItem } from "@/models/experience";
 import { Paginated, useFeathers } from "@/providers/feathers_provider";
 import { useLanguage } from "@/providers/language_provider";
 import { useAppTheme } from "@/providers/style_provider";
+import { useTranslation } from "@/hooks/useTranslation";
 import { AppBar, ListItem, ListItemProps, MainBody, NAVBAR_HEIGHT } from "@components";
 import { useEffect, useRef, useState } from "react";
 import { FlatList, View } from "react-native";
@@ -12,6 +13,7 @@ export default function Page() {
   const feathers = useFeathers();
   const { theme } = useAppTheme();
   const { getLocalizedText } = useLanguage();
+  const { t } = useTranslation();
   const [items, setItems] = useState<ExperienceItem[]>([]);
   /** initial loading */
   const [loaded, setLoaded] = useState(false);
@@ -62,7 +64,7 @@ export default function Page() {
 
   return (
     <MainBody padding={{ top: 0 }}>
-      <AppBar title="Great Workshop" showBack />
+      <AppBar title={t("home.greatWorkshop")} showBack />
       <FlatList
         onScroll={onScroll}
         onEndReached={loadMore}
