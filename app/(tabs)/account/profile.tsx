@@ -1,6 +1,7 @@
 import { useAppTheme, AppTheme } from "@/providers/style_provider";
 import { AppBar, Form, MainBody, NAVBAR_HEIGHT } from "@components";
 import { useAuth } from "@providers/auth_provider";
+import { useTranslation } from "@/hooks/useTranslation";
 import moment from "moment";
 import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
@@ -11,6 +12,7 @@ import { SuccessCircleIcon } from "@/components/icons";
 export default function Page() {
   const { theme } = useAppTheme();
   const style = useStyle({ theme });
+  const { t } = useTranslation();
   const { user, updateUser } = useAuth();
   const [editing, setEditing] = useState(false);
 
@@ -57,7 +59,7 @@ export default function Page() {
   return (
     <MainBody padding={{ top: 0 }}>
       <AppBar
-        title="Profile"
+        title={t("profile.profile")}
         showBack
         goBack={
           !editing
@@ -72,11 +74,11 @@ export default function Page() {
           <>
             <View style={{ rowGap: theme.spacing.lg }}>
               <Text variant="headlineSmall" style={{ color: theme.colors.text }}>
-                Basic Information
+                {t("profile.basicInformation")}
               </Text>
               <View style={style.row}>
                 <Text variant="labelMedium" style={{ color: theme.colors.text }}>
-                  Name
+                  {t("profile.name")}
                 </Text>
                 <Text variant="bodyMedium" style={{ flex: 1, color: theme.colors.text, textAlign: "right" }}>
                   {user?.firstName} {user?.lastName}
@@ -84,23 +86,23 @@ export default function Page() {
               </View>
               <View style={style.row}>
                 <Text variant="labelMedium" style={{ color: theme.colors.text }}>
-                  Username
+                  {t("profile.username")}
                 </Text>
                 <Text variant="bodyMedium" style={{ flex: 1, color: user?.username ? theme.colors.text : theme.colors.grey3, textAlign: "right" }}>
-                  {user?.username ?? "Not provided"}
+                  {user?.username ?? t("profile.notProvided")}
                 </Text>
               </View>
               <View style={style.row}>
                 <Text variant="labelMedium" style={{ color: theme.colors.text }}>
-                  Birthday
+                  {t("profile.birthday")}
                 </Text>
                 <Text variant="bodyMedium" style={{ flex: 1, color: user?.dob ? theme.colors.text : theme.colors.grey3, textAlign: "right" }}>
-                  {user?.dob ? moment(user.dob).format("MM/YYYY") : "Not provided"}
+                  {user?.dob ? moment(user.dob).format("MM/YYYY") : t("profile.notProvided")}
                 </Text>
               </View>
               <View style={[style.row, { justifyContent: "space-between" }]}>
                 <Text variant="labelMedium" style={{ color: theme.colors.text }}>
-                  Password
+                  {t("profile.password")}
                 </Text>
                 <Button
                   mode="contained"
@@ -108,17 +110,17 @@ export default function Page() {
                   style={style.button}
                   labelStyle={{ marginHorizontal: theme.spacing.sm, marginVertical: theme.spacing.xxs }}
                 >
-                  Change password
+                  {t("profile.changePassword")}
                 </Button>
               </View>
             </View>
             <View style={{ rowGap: theme.spacing.lg, marginTop: theme.spacing.xl }}>
               <Text variant="headlineSmall" style={{ color: theme.colors.text }}>
-                Contact
+                {t("profile.contact")}
               </Text>
               <View style={style.row}>
                 <Text variant="labelMedium" style={{ color: theme.colors.text }}>
-                  Email
+                  {t("profile.email")}
                 </Text>
                 <Text variant="bodyMedium" style={{ flex: 1, color: theme.colors.text, textAlign: "right" }}>
                   {user?.email}
@@ -126,10 +128,10 @@ export default function Page() {
               </View>
               <View style={style.row}>
                 <Text variant="labelMedium" style={{ color: theme.colors.text }}>
-                  Mobile number
+                  {t("profile.phone")}
                 </Text>
                 <Text variant="bodyMedium" style={{ flex: 1, color: user?.phone ? theme.colors.text : theme.colors.grey3, textAlign: "right" }}>
-                  {user?.phone ?? "Not provided"}
+                  {user?.phone ?? t("profile.notProvided")}
                 </Text>
               </View>
             </View>
@@ -143,18 +145,18 @@ export default function Page() {
                   value: firstName,
                   onChange: setFirstName,
                   validator: rules.required,
-                  label: "First name*",
+                  label: `${t("profile.firstName")}*`,
                 },
                 {
                   value: lastName,
                   onChange: setLastName,
                   validator: rules.required,
-                  label: "Last name*",
+                  label: `${t("profile.lastName")}*`,
                 },
                 {
                   value: username,
                   onChange: setUsername,
-                  label: "Username",
+                  label: t("profile.username"),
                 },
                 {
                   value: dob,
@@ -163,7 +165,7 @@ export default function Page() {
                     setDob(value);
                   },
                   validator: rules.birthday,
-                  label: "Birthday (DD/MM/YYYY)",
+                  label: `${t("profile.birthday")} (DD/MM/YYYY)`,
                   keyboardType: "number-pad",
                   maxLength: 10,
                 },
@@ -172,7 +174,7 @@ export default function Page() {
                   value: email,
                   onChange: setEmail,
                   validator: [rules.required, rules.email],
-                  label: "Email*",
+                  label: `${t("profile.email")}*`,
                   keyboardType: "email-address",
                 },
                 {
@@ -186,14 +188,14 @@ export default function Page() {
                         } catch (error) {}
                       },
                       keyboardType: "number-pad",
-                      label: "Area code",
+                      label: t("profile.areaCode"),
                       flex: 2,
                     },
                     {
                       value: phone,
                       onChange: setPhone,
                       keyboardType: "phone-pad",
-                      label: "Mobile Number",
+                      label: t("profile.phone"),
                       flex: 4,
                     },
                   ],
@@ -214,7 +216,7 @@ export default function Page() {
           disabled={loading}
           icon={() => (success && editing ? <SuccessCircleIcon fill={theme.colors.textOnPrimary} size={24} /> : undefined)}
         >
-          {editing ? "Save" : "Edit"}
+          {editing ? t("profile.save") : t("profile.edit")}
         </Button>
       </View>
     </MainBody>

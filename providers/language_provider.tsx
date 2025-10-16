@@ -8,6 +8,7 @@ import React, {
   useMemo,
 } from "react";
 import * as SecureStore from "expo-secure-store";
+import { translations, TranslationKey } from "@/locales";
 
 export type LanguageEnum = "en" | "hy" | "ru";
 
@@ -21,6 +22,7 @@ interface LanguageContext {
   getLocalizedText: <T extends { en?: string; hy?: string }>(
     text: T | undefined
   ) => string;
+  t: (key: TranslationKey) => string;
 }
 
 const LanguageStore = createContext<LanguageContext | null>(null);
@@ -86,13 +88,43 @@ export function LanguageProvider({ children }: Props) {
     [state.language]
   );
 
+  /**
+   * Translation function for static UI strings
+   * Supports dot notation for nested keys: t('auth.login')
+   * Falls back to English if translation not found
+   */
+  const t = useCallback(
+    (key: TranslationKey): string => {
+      const keys = key.split(".");
+      let value: any = translations[state.language];
+
+      // Navigate through nested object using dot notation
+      for (const k of keys) {
+        value = value?.[k];
+      }
+
+      // If translation not found, fall back to English
+      if (!value || typeof value !== "string") {
+        let fallbackValue: any = translations.en;
+        for (const k of keys) {
+          fallbackValue = fallbackValue?.[k];
+        }
+        return fallbackValue || key;
+      }
+
+      return value;
+    },
+    [state.language]
+  );
+
   const contextValue = useMemo(
     () => ({
       language: state.language,
       setLanguage,
       getLocalizedText,
+      t,
     }),
-    [state.language, setLanguage, getLocalizedText]
+    [state.language, setLanguage, getLocalizedText, t]
   );
 
   return (

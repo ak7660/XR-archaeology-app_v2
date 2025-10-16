@@ -2,6 +2,7 @@ import { Routes } from "@/app/composable/routes";
 import { AccountListItem, MainBody } from "@/components";
 import { useAuth } from "@/providers/auth_provider";
 import { useAppTheme, AppTheme } from "@/providers/style_provider";
+import { useTranslation } from "@/hooks/useTranslation";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
@@ -12,6 +13,7 @@ export default function SettingsPage() {
   const { theme } = useAppTheme();
   const { top: safeTop } = useSafeAreaInsets();
   const style = useStyle({ theme, statusBarHeight: safeTop });
+  const { t } = useTranslation();
 
   const { user, logout } = useAuth();
   const authenticated = !!(user && user._id);
@@ -46,10 +48,10 @@ export default function SettingsPage() {
           )}
         </View>
         <View style={{ padding: theme.spacing.lg, gap: theme.spacing.md }}>
-          {authenticated && <AccountListItem label="Profile" prefix="profile" onPress={() => router.push(Routes.Profile)} />}
-          <AccountListItem label="Settings" prefix="setting" onPress={() => router.push(Routes.Settings)} />
-          <AccountListItem label="Help and feedback" prefix="help" />
-          <AccountListItem label="Language" prefix="language" onPress={() => router.push(Routes.Language)} />
+          {authenticated && <AccountListItem label={t("profile.profile")} prefix="profile" onPress={() => router.push(Routes.Profile)} />}
+          <AccountListItem label={t("profile.settings")} prefix="setting" onPress={() => router.push(Routes.Settings)} />
+          <AccountListItem label={t("profile.helpAndFeedback")} prefix="help" />
+          <AccountListItem label={t("language.title")} prefix="language" onPress={() => router.push(Routes.Language)} />
         </View>
         <View style={{ padding: theme.spacing.lg }}>
           <Button
@@ -60,7 +62,7 @@ export default function SettingsPage() {
             textColor={authenticated ? theme.colors.primary : theme.colors.textOnPrimary}
             style={[style.button, authenticated ? style.outlinedButton : {}]}
           >
-            {authenticated ? "Sign out" : "Login"}
+            {authenticated ? t("profile.signOut") : t("auth.login")}
           </Button>
         </View>
       </ScrollView>

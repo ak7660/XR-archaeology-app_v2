@@ -3,6 +3,7 @@ import { AppBar, ListItem, ListItemProps, MainBody, NAVBAR_HEIGHT } from "@/comp
 import { Attraction, OpenHour, Weekday } from "@/models";
 import { Paginated, useFeathers } from "@/providers/feathers_provider";
 import { AppTheme, useAppTheme } from "@/providers/style_provider";
+import { useLocalizedText } from "@/hooks/useLocalizedText";
 import { Link, useLocalSearchParams } from "expo-router";
 import _ from "lodash";
 import moment from "moment";
@@ -21,6 +22,7 @@ export default function Page() {
   const layout = useWindowDimensions();
   const style = useStyle({ theme });
   const feathers = useFeathers();
+  const localize = useLocalizedText();
   const params = useLocalSearchParams<{type: string}>();
   const tabRoutes = [
     { key: "Resturants", title: "Resturants" },
@@ -119,7 +121,8 @@ export default function Page() {
           <View style={style.list}>
             {restaurants.map((item) => {
               const openHour = getOpenHoursText(item.businessHours);
-              const brief = item.briefDesc + `\n${openHour ?? ""}`;
+              const localizedBrief = localize(item.briefDesc);
+              const brief = localizedBrief ? `${localizedBrief}\n${openHour ?? ""}` : openHour;
               const props: ListItemProps = {
                 name: item.name,
                 briefDesc: brief,

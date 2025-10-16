@@ -4,6 +4,7 @@ import { View, StyleSheet, ImageBackground, useWindowDimensions, Pressable, Scro
 import { useState } from "react";
 import { AppTheme, useAppTheme } from "@providers/style_provider";
 import { useAuth } from "@providers/auth_provider";
+import { useTranslation } from "@/hooks/useTranslation";
 import { Link, router } from "expo-router";
 import { Orientation, isPortrait, useOrientation } from "@/plugins/orientation";
 import { Routes } from "@/app/composable/routes";
@@ -23,6 +24,7 @@ export default function Home() {
   const { theme } = useAppTheme();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [topSectionHeight, setTopSectionHeight] = useState(0);
+  const { t } = useTranslation();
 
   const style = useStyle({ theme, screenWidth, screenHeight });
 
@@ -30,8 +32,8 @@ export default function Home() {
   const authenticated = !!user && !!user._id;
   const orientation = useOrientation();
 
-  const CardView = (params: { name: string; link?: string; route?: any; image: number; index: number }) => {
-    const { link, route } = params;
+  const CardView = (params: { nameKey: string; link?: string; route?: any; image: number; index: number }) => {
+    const { link, route, nameKey } = params;
     const Container = ({ children }) => {
       if (route) {
         return (
@@ -51,7 +53,7 @@ export default function Home() {
           <ImageBackground source={params.image} imageStyle={style.image}>
             <View style={style.subThumb}>
               <Text variant="labelLarge" style={[style.label, params.index % 2 === 0 ? style.leftcard : style.rightcard]}>
-                {params.name}
+                {t(nameKey as any)}
               </Text>
             </View>
           </ImageBackground>
@@ -110,7 +112,7 @@ export default function Home() {
               <ImageBackground source={require("@assets/images/vedi.jpg")} style={[style.thumbnail]} imageStyle={style.image}>
                 <View style={{ bottom: theme.spacing.sm, left: theme.spacing.sm, position: "absolute" }}>
                   <Text variant="labelLarge" style={style.label}>
-                    Explore the History
+                    {t("home.explore")}
                   </Text>
                 </View>
               </ImageBackground>
@@ -125,7 +127,7 @@ export default function Home() {
           {!authenticated ? (
             <View style={{ flexDirection: "column", gap: theme.spacing.sm }}>
               <Text variant="bodyMedium" style={{ color: theme.colors.grey3 }}>
-                Please login or create an account for more information.
+                {t("auth.login")} / {t("auth.signup")}
               </Text>
               <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                 <Button
@@ -134,21 +136,21 @@ export default function Home() {
                   style={{ borderRadius: theme.spacing.xs }}
                   onPress={() => router.push(Routes.Login)}
                 >
-                  Login
+                  {t("auth.login")}
                 </Button>
                 <Button
                   mode="outlined"
                   style={{ borderRadius: theme.spacing.xs, borderColor: theme.colors.primary, borderWidth: 2 }}
                   onPress={() => router.push(Routes.Register)}
                 >
-                  Sign up
+                  {t("auth.signup")}
                 </Button>
               </View>
             </View>
           ) : (
             <Button mode="contained" style={{ width: "100%", borderRadius: theme.spacing.xs }}>
               <Text variant="labelLarge" style={{ color: theme.colors.textOnPrimary }}>
-                Your Favorite Places
+                {t("home.yourFavoritePlaces")}
               </Text>
             </Button>
           )}

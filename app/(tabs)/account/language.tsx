@@ -1,6 +1,7 @@
 import { MainBody } from "@/components";
 import { useLanguage } from "@/providers/language_provider";
 import { useAppTheme, AppTheme } from "@/providers/style_provider";
+import { useTranslation } from "@/hooks/useTranslation";
 import { router } from "expo-router";
 import { StyleSheet, View } from "react-native";
 import { Button, Card, Text, RadioButton } from "react-native-paper";
@@ -10,13 +11,14 @@ export default function LanguageSelectionPage() {
   const { theme } = useAppTheme();
   const { top: safeTop } = useSafeAreaInsets();
   const style = useStyle({ theme, statusBarHeight: safeTop });
+  const { t } = useTranslation();
 
   const { language, setLanguage } = useLanguage();
 
   const languages = [
-    { code: "en" as const, name: "English", nativeName: "English" },
-    { code: "hy" as const, name: "Armenian", nativeName: "Հայերեն" },
-    { code: "ru" as const, name: "Russian", nativeName: "Русский" },
+    { code: "en" as const, name: t("language.english"), nativeName: "English" },
+    { code: "hy" as const, name: t("language.armenian"), nativeName: "Հայերեն" },
+    { code: "ru" as const, name: t("language.russian"), nativeName: "Русский" },
   ];
 
   function handleLanguageChange(languageCode: "en" | "hy" | "ru") {
@@ -32,10 +34,10 @@ export default function LanguageSelectionPage() {
       <View style={[style.topSection]}>
         <View style={{ paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.sm }}>
           <Text variant="headlineMedium" style={{ color: theme.colors.textOnPrimary }}>
-            Language Settings
+            {t("language.title")}
           </Text>
           <Text variant="bodyMedium" style={{ color: theme.colors.textOnPrimary }}>
-            Choose your preferred language
+            {t("language.subtitle")}
           </Text>
         </View>
       </View>
@@ -44,7 +46,7 @@ export default function LanguageSelectionPage() {
         <Card style={style.card}>
           <Card.Content>
             <Text variant="titleMedium" style={{ marginBottom: theme.spacing.md }}>
-              Select Language
+              {t("language.selectLanguage")}
             </Text>
             
             {languages.map((lang) => (
@@ -75,7 +77,7 @@ export default function LanguageSelectionPage() {
           mode="contained"
           style={style.button}
         >
-          Save Changes
+          {t("language.saveChanges")}
         </Button>
       </View>
     </MainBody>

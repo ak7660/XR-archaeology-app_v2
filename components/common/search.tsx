@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { View, TextInput, StyleSheet } from "react-native";
 import { Text } from "react-native-paper";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export function SearchInput(props?: { value?: string; hint?: string; onChangeText?: (text: string) => void }) {
-  const { hint = "Search...", onChangeText = () => {} } = props ?? {};
+  const { t } = useTranslation();
+  const { hint = t("common.search"), onChangeText = () => {} } = props ?? {};
   const [text, setText] = useState("");
 
   return (

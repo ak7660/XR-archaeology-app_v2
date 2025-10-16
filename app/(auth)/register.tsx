@@ -5,6 +5,7 @@ import { ScrollView, StyleSheet, View } from "react-native";
 import { Button, Text } from "react-native-paper";
 import { useAuth } from "@providers/auth_provider";
 import { useAppTheme, AppTheme } from "@providers/style_provider";
+import { useTranslation } from "@/hooks/useTranslation";
 import * as rules from "@/plugins/rules";
 import moment from "moment";
 import { router } from "expo-router";
@@ -12,6 +13,7 @@ import { router } from "expo-router";
 export default function RegisterPage() {
   const { theme } = useAppTheme();
   const style = useStyle({ theme });
+  const { t } = useTranslation();
   const { register, login } = useAuth();
 
   const [firstName, setFirstName] = useState("");
@@ -60,7 +62,7 @@ export default function RegisterPage() {
 
   return (
     <MainBody padding={{ top: 0 }}>
-      <AppBar title="Sign up" showBack={true} />
+      <AppBar title={t("auth.signup")} showBack={true} />
       <ScrollView contentContainerStyle={{ padding: theme.spacing.lg, flexGrow: 1 }}>
         <Form
           setValid={setFormValid}
@@ -69,18 +71,18 @@ export default function RegisterPage() {
               value: firstName,
               onChange: setFirstName,
               validator: rules.required,
-              label: "First name*",
+              label: t("auth.firstNameRequired"),
             },
             {
               value: lastName,
               onChange: setLastName,
               validator: rules.required,
-              label: "Last name*",
+              label: t("auth.lastNameRequired"),
             },
             {
               value: username,
               onChange: setUsername,
-              label: "Username",
+              label: t("auth.username"),
             },
             // {
             //   value: dob,
@@ -106,14 +108,14 @@ export default function RegisterPage() {
                     }
                   },
                   keyboardType: "number-pad",
-                  label: "Area code",
+                  label: t("auth.areaCode"),
                   flex: 2,
                 },
                 {
                   value: phone,
                   onChange: setPhone,
                   keyboardType: "phone-pad",
-                  label: "Mobile Number",
+                  label: t("auth.mobileNumber"),
                   flex: 4,
                 },
               ],
@@ -122,14 +124,14 @@ export default function RegisterPage() {
               value: email,
               onChange: setEmail,
               validator: [rules.required, rules.email],
-              label: "Email*",
+              label: t("auth.emailRequired"),
               keyboardType: "email-address",
             },
             {
               value: password,
               onChange: setPassword,
               validator: [rules.required, rules.password],
-              label: "Password*",
+              label: t("auth.passwordRequired"),
               keyboardType: "visible-password",
             },
           ]}
@@ -148,7 +150,7 @@ export default function RegisterPage() {
           loading={loading}
         >
           <Text variant="labelLarge" style={{ color: theme.colors.background, fontWeight: "bold" }}>
-            Create an account
+            {t("auth.signup")}
           </Text>
         </Button>
       </View>

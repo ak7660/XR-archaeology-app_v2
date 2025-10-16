@@ -6,12 +6,14 @@ import { StyleSheet, View } from "react-native";
 import _ from "lodash";
 import { useAuth } from "@providers/auth_provider";
 import { useAppTheme, AppTheme } from "@providers/style_provider";
+import { useTranslation } from "@/hooks/useTranslation";
 import * as rules from "@/plugins/rules";
 import { Routes } from "../composable/routes";
 
 export default function LoginPage() {
   const { theme } = useAppTheme();
   const style = useStyle({ theme });
+  const { t } = useTranslation();
 
   const { login } = useAuth();
   const [email, setEmail] = useState("");
@@ -37,7 +39,7 @@ export default function LoginPage() {
 
   return (
     <MainBody padding={{ top: 0 }}>
-      <AppBar title="Login" showBack />
+      <AppBar title={t("auth.login")} showBack />
       <View
         style={{
           paddingVertical: theme.spacing.md,
@@ -53,25 +55,25 @@ export default function LoginPage() {
               value: email,
               onChange: setEmail,
               validator: [rules.required, rules.email],
-              label: "Email",
+              label: t("auth.email"),
               keyboardType: "email-address",
             },
             {
               value: password,
               onChange: setPassword,
               validator: [rules.required, rules.password],
-              label: "Password",
+              label: t("auth.password"),
               keyboardType: "visible-password",
             },
           ]}
         />
         <View style={[style.row, { gap: theme.spacing.xxs }]}>
           <Text variant="bodyMedium" style={{ color: theme.colors.text }}>
-            Forget the password?
+            {t("auth.forgotPassword")}
           </Text>
           <Link href={"/register"} style={{ color: theme.colors.grey1, paddingVertical: theme.spacing.xs }}>
             <Text variant="labelMedium" style={{ color: theme.colors.primary }}>
-              Reset the password
+              {t("auth.resetPassword")}
             </Text>
           </Link>
         </View>
@@ -87,14 +89,14 @@ export default function LoginPage() {
           disabled={loading}
         >
           <Text variant="labelLarge" style={{ color: theme.colors.textOnPrimary, fontWeight: "bold" }}>
-            Login
+            {t("auth.login")}
           </Text>
         </Button>
         <Text style={{ color: theme.colors.error }}>{errorMsg}</Text>
         <View style={{ height: theme.spacing.md }} />
         <View style={[style.row, { gap: theme.spacing.xxs, justifyContent: "center" }]}>
           <Text variant="bodyLarge" style={{ color: theme.colors.text }}>
-            Don't have an account?
+            {t("auth.dontHaveAccount")}
           </Text>
           <Button
             mode="text"
@@ -104,7 +106,7 @@ export default function LoginPage() {
             disabled={loading}
           >
             <Text variant="labelLarge" style={{ color: theme.colors.primary, fontWeight: "bold" }}>
-              Sign up
+              {t("auth.signup")}
             </Text>
           </Button>
         </View>
