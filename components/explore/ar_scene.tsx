@@ -15,10 +15,45 @@ import {
   ViroTrackingStateConstants,
 } from "@viro-community/react-viro";
 import { Viro3DPoint, ViroRotation } from "@viro-community/react-viro/dist/components/Types/ViroUtils";
-import { createRef, useCallback, useMemo, useRef } from "react";
+import { createRef, useCallback, useEffect, useMemo, useRef } from "react";
 import * as Vector from "@/plugins/vector";
 import moment from "moment";
 import { useARLocation } from "@/providers/ar_location_provider";
+
+// Initialize materials safely - will be created on first use
+let materialsInitialized = false;
+
+function initializeMaterials() {
+  if (materialsInitialized) return;
+  
+  try {
+    ViroMaterials.createMaterials({
+      area: {
+        lightingModel: "Constant",
+        diffuseColor: "#DBF43E30",
+        colorWritesMask: "Green",
+        blendMode: "Alpha",
+      },
+      path: {
+        lightingModel: "Constant",
+        diffuseColor: "#DBF43E",
+        diffuseTexture: require("@assets/images/diffuse.png"),
+        blendMode: "Add",
+      },
+      pin: {
+        lightingModel: "Constant",
+        diffuseColor: "#D81C1C",
+      },
+      waypoint: {
+        lightingModel: "Constant",
+        diffuseColor: "#1CD8D2",
+      },
+    });
+    materialsInitialized = true;
+  } catch (error) {
+    console.log("Failed to initialize ViroMaterials:", error);
+  }
+}
 
 export interface Props<T extends unknown> {
   arSceneNavigator: {
@@ -52,6 +87,11 @@ export default function ARExplorePage(props?: Props<ARExploreProps>) {
   const { targetPoint, calPoint, calTarget, addComment, comments } = props?.arSceneNavigator?.viroAppProps ?? {};
   const { speed, position, setPosition, initLocation, location, initHeading } = useARLocation();
   const sceneRef = createRef<ViroARScene>();
+
+  // Initialize materials when component mounts
+  useEffect(() => {
+    initializeMaterials();
+  }, []);
 
   function handleError(event) {
     console.log("OBJ loading failed with error: " + event.nativeEvent.error);
@@ -226,26 +266,3 @@ export default function ARExplorePage(props?: Props<ARExploreProps>) {
     </ViroARScene>
   );
 }
-
-ViroMaterials.createMaterials({
-  area: {
-    lightingModel: "Constant",
-    diffuseColor: "#DBF43E30",
-    colorWritesMask: "Green",
-    blendMode: "Alpha",
-  },
-  path: {
-    lightingModel: "Constant",
-    diffuseColor: "#DBF43E",
-    diffuseTexture: require("@assets/images/diffuse.png"),
-    blendMode: "Add",
-  },
-  pin: {
-    lightingModel: "Constant",
-    diffuseColor: "#D81C1C",
-  },
-  waypoint: {
-    lightingModel: "Constant",
-    diffuseColor: "#1CD8D2",
-  },
-});
