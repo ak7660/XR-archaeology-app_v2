@@ -79,7 +79,7 @@ export default function Page() {
               {localize(item.name)}
             </Text>
             {item.tags && item.tags.length > 0 && (
-              <Text style={{ color: theme.colors.primary }}>{item.tags?.map((tag) => (tag as Tag).name).join(", ")}</Text>
+              <Text style={{ color: theme.colors.primary }}>{item.tags?.map((tag) => localize((tag as Tag).name)).join(", ")}</Text>
             )}
             {item.desc ? (
               <Text variant="bodyMedium" style={{ color: theme.colors.text }}>
