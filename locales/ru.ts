@@ -1,11 +1,11 @@
 /**
  * Russian Translations (Русский)
- * 
+ *
  * This file contains all static UI strings in Russian.
  * Structure mirrors en.ts for consistency.
  */
 
-import { Translations } from './types';
+import { Translations } from "./types";
 
 export const ru: Translations = {
   // Common UI elements used across the app
@@ -28,6 +28,10 @@ export const ru: Translations = {
     yes: "Да",
     no: "Нет",
     others: "Другое",
+    entranceFee: "Входная плата",
+    exploreTheArea: "Исследуйте эту область",
+    viewInMap: "Посмотреть на карте",
+    startArTour: "Начать AR тур",
   },
 
   // Authentication screens
@@ -86,8 +90,10 @@ export const ru: Translations = {
     reconstructionGuide: "Руководство по реконструкции",
     welcome: "Добро пожаловать!",
     guideText1: "Когда вы расположите его как можно ближе к руинам, просто нажмите кнопку «разместить», чтобы зафиксировать модель на месте.",
-    guideText2: "После размещения модели вы можете свободно вращать и перемещать её с помощью элементов управления на экране, чтобы получить идеальный вид.",
-    guideText3: "Когда вы будете довольны расположением, не забудьте нажать кнопку камеры в правом нижнем углу, чтобы сделать памятную фотографию. Наслаждайтесь!",
+    guideText2:
+      "После размещения модели вы можете свободно вращать и перемещать её с помощью элементов управления на экране, чтобы получить идеальный вид.",
+    guideText3:
+      "Когда вы будете довольны расположением, не забудьте нажать кнопку камеры в правом нижнем углу, чтобы сделать памятную фотографию. Наслаждайтесь!",
     gotItLetsTry: "Понятно, давайте попробуем",
     placeIt: "Разместить!",
     reset: "Сбросить",

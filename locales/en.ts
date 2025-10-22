@@ -1,6 +1,6 @@
 /**
  * English Translations
- * 
+ *
  * This file contains all static UI strings in English.
  * Organized by feature/screen for easy maintenance.
  */
@@ -26,6 +26,10 @@ export const en = {
     yes: "Yes",
     no: "No",
     others: "Others",
+    entranceFee: "Entrance Fee",
+    exploreTheArea: "Explore the area",
+    viewInMap: "View in Map",
+    startArTour: "Start AR Tour",
   },
 
   // Authentication screens
@@ -85,7 +89,8 @@ export const en = {
     welcome: "Welcome!",
     guideText1: "Once you've positioned it as close to the ruins as possible, simply tap the 'place it' button to lock the model in place.",
     guideText2: "Once the model is placed, feel free to rotate and move it around using the on-screen controls to get the perfect view.",
-    guideText3: "When you're satisfied with the positioning, don't forget to tap the camera button located at the bottom right to capture a commemorative photo. Enjoy your experience!",
+    guideText3:
+      "When you're satisfied with the positioning, don't forget to tap the camera button located at the bottom right to capture a commemorative photo. Enjoy your experience!",
     gotItLetsTry: "Got it, Let's try",
     placeIt: "Place It!",
     reset: "Reset",

@@ -1,11 +1,11 @@
 /**
  * Armenian Translations (Հայերեն)
- * 
+ *
  * This file contains all static UI strings in Armenian.
  * Structure mirrors en.ts for consistency.
  */
 
-import { Translations } from './types';
+import { Translations } from "./types";
 
 export const hy: Translations = {
   // Common UI elements used across the app
@@ -28,6 +28,10 @@ export const hy: Translations = {
     yes: "Այո",
     no: "Ոչ",
     others: "Այլ",
+    entranceFee: "Մուտքի վճար",
+    exploreTheArea: "Ուսումնասիրեք այս տարածքը",
+    viewInMap: "Դիտել քարտեզում",
+    startArTour: "Սկսել AR տուր",
   },
 
   // Authentication screens

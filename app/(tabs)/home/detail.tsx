@@ -14,6 +14,7 @@ import { distanceFromLatLonInKm } from "@/plugins/geolocation";
 import { LatLng } from "react-native-maps";
 import { Routes } from "@/app/composable/routes";
 import { useLocalizedText } from "@/hooks/useLocalizedText";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function Page() {
   const feathers = useFeathers();
@@ -21,6 +22,7 @@ export default function Page() {
   const { width: screenWidth } = useWindowDimensions();
   const style = useStyle({ theme, screenWidth });
   const localize = useLocalizedText();
+  const { t } = useTranslation();
   /**
    * @property {string} id refers to the _id of model
    * @property {string} service refers to the feathers api service's name
@@ -104,7 +106,7 @@ export default function Page() {
             }}
           >
             <Text variant="titleMedium" style={{ color: theme.colors.text }}>
-              Entrance Fee:
+              {t("common.entranceFee")}:
             </Text>
             <Text variant="labelLarge" style={{ color: theme.colors.primary }}>
               {item.entranceFee ?? "Free"}
@@ -114,7 +116,7 @@ export default function Page() {
           {canNavigate && (
             <View style={{ flexDirection: "column" }}>
               <Text variant="titleMedium" style={{ color: theme.colors.text, paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.xs }}>
-                Explore the area
+                {t("common.exploreTheArea")}
               </Text>
               <MapPreview points={[item as GeoPoint]} style={style.map} miniZoomLevel={13} />
               <View
@@ -133,7 +135,7 @@ export default function Page() {
                   icon={() => <LocationIcon fill={theme.colors.textOnPrimary} size={20} />}
                 >
                   <Text variant="labelMedium" style={{ color: theme.colors.textOnPrimary }}>
-                    View in a map
+                    {t("common.viewInMap")}
                   </Text>
                 </Button>
                 <Button
@@ -143,7 +145,7 @@ export default function Page() {
                   onPress={startARTour}
                 >
                   <Text variant="labelMedium" style={{ color: theme.colors.primary }}>
-                    Start AR tour
+                    {t("common.startArTour")}
                   </Text>
                 </Button>
               </View>
