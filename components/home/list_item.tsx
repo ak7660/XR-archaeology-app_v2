@@ -79,8 +79,10 @@ export default function ListItem({ name, briefDesc, images, href, showNavigate, 
     let tags = "";
     if (Array.isArray(props.tags)) {
       if (props.tags.length > 0) {
-        if (typeof props.tags[0] === "string") tags = props.tags.join(", ");
-        else tags = props.tags.map((tag) => (tag as Tag).name).join(", ");
+        if (typeof props.tags[0] === "string") {tags = props.tags.join(", ") 
+          console.log("inside if")
+        }
+        else {tags = props.tags.map((tag) => localize((tag as Tag).name)).join(", ")};
       }
     } else if (typeof props.tags === "string") tags = props.tags;
     return (
