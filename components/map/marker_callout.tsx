@@ -2,10 +2,12 @@ import { Image, Platform, StyleSheet, View, useWindowDimensions } from "react-na
 import { Callout } from "react-native-maps";
 import { Text } from "react-native-paper";
 import { AppTheme, useAppTheme } from "@providers/style_provider";
+import { MultilingualText } from "@/models/attraction";
+import { useLocalizedText } from "@/hooks/useLocalizedText";
 
 export interface Props {
-  title: string;
-  desc?: string;
+  title: string | MultilingualText;
+  desc?: string | MultilingualText;
   image?: string;
   onPress?: VoidFunction;
 }
@@ -14,17 +16,23 @@ export default function MarkerCallout({ title, desc, image, onPress }: Props) {
   const { theme } = useAppTheme();
   const screenWidth = useWindowDimensions().width;
   const style = useStyle(theme, screenWidth);
+  const getLocalizedText = useLocalizedText();
+
+  // Handle both string and MultilingualText types
+  const titleText = typeof title === "string" ? title : getLocalizedText(title);
+  const descText = typeof desc === "string" ? desc : getLocalizedText(desc);
+
   return (
     <Callout tooltip onPress={onPress}>
       <View>
         <View style={style.container}>
           {image && <Image source={{ uri: image }} resizeMethod="resize" style={{ width: 100, height: "100%" }} />}
           <View style={{ flex: 1, paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm }}>
-            <Text style={{ fontWeight: "bold", fontSize: 18 }}>{title}</Text>
-            {desc && (
+            <Text style={{ fontWeight: "bold", fontSize: 18 }}>{titleText}</Text>
+            {descText && (
               <Text>
-                {desc.slice(0, 160)}
-                {desc.length > 160 ? "..." : ""}
+                {descText.slice(0, 160)}
+                {descText.length > 160 ? "..." : ""}
               </Text>
             )}
           </View>
