@@ -6,8 +6,8 @@ import {
   ViroARSceneNavigator,
   ViroText,
   Viro3DObject,
-  ViroARCamera,
   ViroCameraTransform,
+  ViroNode,
 } from "@viro-community/react-viro";
 import { AppTheme, useAppTheme } from "@providers/style_provider";
 import { IconBtn, MainBody } from "@/components";
@@ -33,6 +33,16 @@ const GuideScene = observer(() => {
   const params = useLocalSearchParams<{ id?: "1" | "2" }>();
   const wall = WALL_INFOS.find((wall) => wall.id === Number(params.id)) as ARInfo;
 
+  // Safety check - if wall not found, return empty scene
+  if (!wall || !wall.model) {
+    console.error("Wall not found or model missing for id:", params.id);
+    return (
+      <ViroARScene>
+        <ViroAmbientLight color="#ffffff" intensity={600} />
+      </ViroARScene>
+    );
+  }
+
   useEffect(() => {
     if (ModelStore.stage !== "unlock") {
       const [x, y, z] = lastforward;
@@ -54,16 +64,16 @@ const GuideScene = observer(() => {
     <>
       <ViroARScene onCameraTransformUpdate={(info) => updateCameraPosition(info)}>
         <ViroAmbientLight color="#ffffff" intensity={600} />
-        <ViroARCamera>
-          {ModelStore.stage === "unlock" && (
+        {ModelStore.stage === "unlock" && (
+          <ViroNode position={[0, 0, -1]}>
             <ViroText
               text="Press to place the wall"
-              position={[0, 0.1, -1]}
+              position={[0, 0.1, 0]}
               scale={[0.4, 0.4, 0.4]}
               style={{ fontFamily: "Arial", color: "white" }}
             />
-          )}
-        </ViroARCamera>
+          </ViroNode>
+        )}
         <Viro3DObject
           source={wall.model}
           rotation={toJS(ModelStore.rotation)}
@@ -84,6 +94,7 @@ const ARTest = observer(() => {
   const appStore = useAppStore();
   const ModelStore = useArModelStore();
   const [status, requestPermission] = MediaLibrary.usePermissions();
+  const [isOrientationReady, setIsOrientationReady] = useState(false);
 
   if (status === null) {
     requestPermission();
@@ -187,7 +198,18 @@ const ARTest = observer(() => {
   useEffect(() => {
     appStore.setAppBar("hidden");
     ModelStore.reset();
-    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE_RIGHT);
+    
+    // Lock orientation and wait for it to stabilize before rendering AR scene
+    const initOrientation = async () => {
+      await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE_RIGHT);
+      // Give some time for the orientation change to complete
+      setTimeout(() => {
+        setIsOrientationReady(true);
+      }, 300);
+    };
+    
+    initOrientation();
+    
     return () => {
       setTimeout(async () => {
         const curOrientation = await ScreenOrientation.getOrientationAsync();
@@ -209,8 +231,13 @@ const ARTest = observer(() => {
     <MainBody>
       <>
         {/* @ts-ignore */}
-        <ViroARSceneNavigator initialScene={{ scene: GuideScene }} />
-        {ModelStore.stage !== "screenshot" && (
+        {isOrientationReady && <ViroARSceneNavigator initialScene={{ scene: GuideScene }} />}
+        {!isOrientationReady && (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'black' }}>
+            <Text style={{ color: 'white' }}>Initializing AR...</Text>
+          </View>
+        )}
+        {ModelStore.stage !== "screenshot" && isOrientationReady && (
           <>
             <View style={style.hintContainer}>
               <IconBtn key={"home"} icon="help" style={{ zIndex: 10 }} iconProps={{ fill: theme.colors.primary }} onPress={() => showHint()} />
