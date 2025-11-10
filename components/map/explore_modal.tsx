@@ -10,6 +10,7 @@ import { GeoPoint } from "@/models";
 import { useRouter } from "expo-router";
 import { distanceFromLatLonInKm } from "@/plugins/geolocation";
 import * as ExpoLocation from "expo-location";
+import { useLocalizedText } from "@/hooks/useLocalizedText";
 
 interface ExploreModalProps {
   open: boolean;
@@ -25,6 +26,7 @@ export default function ExploreModal({ open, setOpen, data, targetIndex = 0 }: E
   const { top: safeTop } = useSafeAreaInsets();
   const screenHeight = Dimensions.get("window").height;
   const router = useRouter();
+  const getLocalizedText = useLocalizedText();
 
   const snapPoints = useMemo(() => ["20%", "50%", screenHeight - safeTop], []);
 
@@ -45,6 +47,17 @@ export default function ExploreModal({ open, setOpen, data, targetIndex = 0 }: E
   }, []);
 
   const point: GeoPoint = Array.isArray(data) ? data[targetIndex] : data;
+
+  // Localize multilingual text fields
+  const displayName = point?.name 
+    ? (typeof point.name === "string" ? point.name : getLocalizedText(point.name))
+    : (point?.title 
+      ? (typeof point.title === "string" ? point.title : getLocalizedText(point.title))
+      : "");
+  
+  const displayDesc = point?.desc
+    ? (typeof point.desc === "string" ? point.desc : getLocalizedText(point.desc))
+    : "";
 
   async function startARTour() {
     const isAttraction = !!point.type;
@@ -88,7 +101,7 @@ export default function ExploreModal({ open, setOpen, data, targetIndex = 0 }: E
       >
         {point && (
           <BottomSheetScrollView style={style.container}>
-            <Text variant="headlineSmall">{point.name || point.title}</Text>
+            <Text variant="headlineSmall">{displayName}</Text>
             <ScrollView
               alwaysBounceHorizontal={false}
               alwaysBounceVertical={false}
@@ -121,7 +134,7 @@ export default function ExploreModal({ open, setOpen, data, targetIndex = 0 }: E
               </View>
             </ScrollView>
             <Text variant="bodyMedium" style={{ color: theme.colors.text }}>
-              {point.desc}
+              {displayDesc}
             </Text>
           </BottomSheetScrollView>
         )}

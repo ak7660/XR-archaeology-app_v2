@@ -8,6 +8,7 @@ import { distanceFromLatLonInKm } from "@/plugins/geolocation";
 import * as ExpoLocation from "expo-location";
 import { Routes } from "@/app/composable/routes";
 import { getMapThirdLink } from "@/app/composable/links";
+import { useLocalizedText } from "@/hooks/useLocalizedText";
 
 /**
  * @property {T[]} points is a list of locations in which the target point exits.
@@ -32,10 +33,12 @@ export default function ExploreItem<T extends GeoPoint>(item: ItemProps<T>) {
 
   const router = useRouter();
   const { theme } = useAppTheme();
+  const getLocalizedText = useLocalizedText();
 
   const targetIndex = points.findIndex((it) => it._id === id);
   const point = points[targetIndex];
   const title = point[titleKey];
+  const displayTitle = typeof title === "string" ? title : getLocalizedText(title);
   let images = getImages?.(point);
   if (typeof images === "string") images = [images];
 
@@ -51,7 +54,12 @@ export default function ExploreItem<T extends GeoPoint>(item: ItemProps<T>) {
   }
 
   const type: string | undefined = point.type;
-  const tags: string | undefined = point.tags?.map((tag) => (tag as Tag).name).join(", ");
+  const tags: string | undefined = point.tags
+    ?.map((tag) => {
+      const tagObj = tag as Tag;
+      return typeof tagObj.name === "string" ? tagObj.name : getLocalizedText(tagObj.name);
+    })
+    .join(", ");
   const isAttraction = !!type;
 
   const _style = useStyle({
@@ -106,7 +114,7 @@ export default function ExploreItem<T extends GeoPoint>(item: ItemProps<T>) {
       <View style={_style.item}>
         <>
           <Text variant="labelLarge" style={{ color: theme.colors.text }}>
-            {title}
+            {displayTitle}
           </Text>
           {length && (
             <Text variant="labelMedium" style={_style.lengthText}>
