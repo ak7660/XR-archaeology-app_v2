@@ -437,6 +437,40 @@ export default function TripPlannerPage() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Loading Modal */}
+      <Modal
+        visible={isLoading}
+        transparent
+        animationType="fade"
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: theme.colors.surface,
+              borderRadius: theme.spacing.lg,
+              padding: theme.spacing.xl,
+              alignItems: 'center',
+              minWidth: 200,
+            }}
+          >
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <Text variant="titleMedium" style={{ color: theme.colors.text, marginTop: theme.spacing.lg }}>
+              Generating Your Trip Plan
+            </Text>
+            <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: theme.spacing.sm, textAlign: 'center' }}>
+              This may take a few moments...
+            </Text>
+          </View>
+        </View>
+      </Modal>
     </MainBody>
   );
 }
