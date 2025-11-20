@@ -117,6 +117,21 @@ export default function Home() {
             </Pressable>
           </Link>
           <View style={style.entryContainer}>{Entries.map((v, index) => CardView({ ...v, index }))}</View>
+          
+          {/* Trip Planner Button - Centered below cards */}
+          <View style={{ alignItems: "center", marginTop: theme.spacing.md }}>
+            <Button
+              mode="contained"
+              icon="plus"
+              onPress={() => router.push(Routes.TripPlanner)}
+              style={{ borderRadius: theme.spacing.sm }}
+              contentStyle={{ paddingVertical: theme.spacing.xs }}
+            >
+              <Text variant="labelLarge" style={{ color: theme.colors.textOnPrimary }}>
+                Plan Your Trip
+              </Text>
+            </Button>
+          </View>
         </View>
         {/* Login / Favorite Place*/}
         <View
