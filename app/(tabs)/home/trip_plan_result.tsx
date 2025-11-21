@@ -1,8 +1,10 @@
 import { AppBar, MainBody, NAVBAR_HEIGHT } from "@/components";
 import { useAppTheme } from "@/providers/style_provider";
 import { useAppStore } from "@/app/state/app";
+import { Routes } from "@/app/composable/routes";
+import { router } from "expo-router";
 import { ScrollView, View, StyleSheet } from "react-native";
-import { Text, Card, Divider, Chip } from "react-native-paper";
+import { Text, Card, Divider, Chip, Button } from "react-native-paper";
 import React from "react";
 import { observer } from "mobx-react-lite";
 
@@ -12,6 +14,7 @@ const TripPlanResultPage = observer(() => {
   
   // Get trip plan from app state
   const tripPlan = appStore.tripPlan;
+  const conversationId = appStore.conversationId;
   
   console.log("Trip plan from state length:", tripPlan.length);
   if (tripPlan.length > 0) {
@@ -253,14 +256,47 @@ const TripPlanResultPage = observer(() => {
     },
   });
 
+  const handleRefineInChat = () => {
+    // Navigate back to trip planner to continue the conversation
+    router.back();
+  };
+
   return (
     <MainBody padding={{ top: 0 }}>
       <AppBar title="Your Trip Plan" showBack />
       <ScrollView contentContainerStyle={styles.container}>
         {tripPlan.length > 0 ? (
-          <Card style={styles.card}>
-            {parseMarkdown(tripPlan)}
-          </Card>
+          <>
+            <Card style={styles.card}>
+              {parseMarkdown(tripPlan)}
+            </Card>
+            
+            {conversationId && (
+              <View style={{ padding: theme.spacing.md }}>
+                <Button
+                  mode="contained"
+                  icon="message-text"
+                  onPress={handleRefineInChat}
+                  style={{ borderRadius: theme.spacing.sm }}
+                  contentStyle={{ paddingVertical: theme.spacing.sm }}
+                >
+                  <Text variant="labelLarge" style={{ color: theme.colors.textOnPrimary }}>
+                    Continue Chat to Refine Plan
+                  </Text>
+                </Button>
+                <Text
+                  variant="bodySmall"
+                  style={{
+                    color: theme.colors.onSurfaceVariant,
+                    textAlign: "center",
+                    marginTop: theme.spacing.sm,
+                  }}
+                >
+                  Ask questions or request changes to your itinerary
+                </Text>
+              </View>
+            )}
+          </>
         ) : (
           <Text style={styles.emptyText}>
             No trip plan received. Please try generating again.

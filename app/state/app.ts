@@ -2,14 +2,15 @@ import { makeAutoObservable } from "mobx";
 import { createContext, useContext } from "react";
 
 export class AppState {
-  bar_status: 'hidden' | 'show' = 'show';
-  tripPlan: string = '';
+  bar_status: "hidden" | "show" = "show";
+  tripPlan: string = "";
+  conversationId: string | null = null;
 
   constructor() {
     makeAutoObservable(this);
   }
 
-  setAppBar(status: 'hidden' | 'show') {
+  setAppBar(status: "hidden" | "show") {
     this.bar_status = status;
   }
 
@@ -18,7 +19,15 @@ export class AppState {
   }
 
   clearTripPlan() {
-    this.tripPlan = '';
+    this.tripPlan = "";
+  }
+
+  setConversationId(id: string) {
+    this.conversationId = id;
+  }
+
+  clearConversationId() {
+    this.conversationId = null;
   }
 }
 
