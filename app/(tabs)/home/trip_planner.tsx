@@ -4,8 +4,8 @@ import { AppBar, MainBody, NAVBAR_HEIGHT } from "@/components";
 import { useAppTheme } from "@/providers/style_provider";
 import { router } from "expo-router";
 import { useState, useRef, useEffect } from "react";
-import { ScrollView, StyleSheet, View, KeyboardAvoidingView, Platform, TouchableOpacity } from "react-native";
-import { TextInput, Text, ActivityIndicator, IconButton, Chip } from "react-native-paper";
+import { ScrollView, StyleSheet, View, KeyboardAvoidingView, Platform, TouchableOpacity, Modal, FlatList } from "react-native";
+import { TextInput, Text, ActivityIndicator, IconButton, Chip, Button, Card, Searchbar } from "react-native-paper";
 import { observer } from "mobx-react-lite";
 
 // Types matching the API response
@@ -57,6 +57,8 @@ const TripPlannerPage = observer(() => {
   const [availableLocations, setAvailableLocations] = useState<Location[]>([]);
   const [selectedStartLocation, setSelectedStartLocation] = useState<Location | null>(null);
   const [selectedDestLocation, setSelectedDestLocation] = useState<Location | null>(null);
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [locationSearchQuery, setLocationSearchQuery] = useState("");
   const [language] = useState("en"); // Could be changed based on app language settings
 
   // Initialize conversation on mount
@@ -117,6 +119,11 @@ const TripPlannerPage = observer(() => {
       }
 
       const data: ChatResponse = await response.json();
+      
+      console.log("=== API Response ===");
+      console.log("Stage:", data.stage);
+      console.log("Available locations:", data.available_locations?.length || 0);
+      console.log("First location:", data.available_locations?.[0]);
 
       // Store conversation ID
       if (data.conversation_id) {
@@ -127,9 +134,19 @@ const TripPlannerPage = observer(() => {
       // Update current stage
       setCurrentStage(data.stage);
 
-      // Handle available locations
-      if (data.available_locations && data.available_locations.length > 0) {
+      // Handle available locations - check if we're in the right stage and have locations
+      if (data.stage === "collecting_locations" && data.available_locations && data.available_locations.length > 0) {
+        console.log("✓ Stage is collecting_locations and we have", data.available_locations.length, "locations");
+        console.log("✓ Setting available locations and showing modal");
         setAvailableLocations(data.available_locations);
+        
+        // Use setTimeout to ensure state is updated before showing modal
+        setTimeout(() => {
+          console.log("✓ Opening modal now");
+          setShowLocationModal(true);
+        }, 100);
+      } else {
+        console.log("✗ Not showing modal - Stage:", data.stage, "Locations:", data.available_locations?.length || 0);
       }
 
       // Add assistant response
@@ -188,7 +205,18 @@ const TripPlannerPage = observer(() => {
     setSelectedStartLocation(null);
     setSelectedDestLocation(null);
     setAvailableLocations([]);
+    setShowLocationModal(false);
+    setLocationSearchQuery("");
     sendMessage(message);
+  };
+
+  const handleSkipLocationSelection = () => {
+    setSelectedStartLocation(null);
+    setSelectedDestLocation(null);
+    setAvailableLocations([]);
+    setShowLocationModal(false);
+    setLocationSearchQuery("");
+    sendMessage("I don't know, please suggest");
   };
 
   const handleViewPlan = () => {
@@ -199,6 +227,8 @@ const TripPlannerPage = observer(() => {
 
   const renderMessage = (message: ChatMessage, index: number) => {
     const isUser = message.role === "user";
+    const isLastMessage = index === messages.length - 1;
+    const showLocationButton = !isUser && isLastMessage && availableLocations.length > 0 && currentStage === "collecting_locations";
     
     return (
       <View
@@ -235,117 +265,184 @@ const TripPlannerPage = observer(() => {
             {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
           </Text>
         </View>
+        
+        {showLocationButton && (
+          <View style={{ marginTop: theme.spacing.sm, gap: theme.spacing.xs }}>
+            <Button
+              mode="contained"
+              icon="map-marker-multiple"
+              onPress={() => setShowLocationModal(true)}
+              style={{ borderRadius: theme.spacing.sm }}
+            >
+              <Text style={{ color: theme.colors.textOnPrimary }}>
+                Choose from {availableLocations.length} Locations
+              </Text>
+            </Button>
+            <Button
+              mode="outlined"
+              icon="auto-fix"
+              onPress={handleSkipLocationSelection}
+              style={{ borderRadius: theme.spacing.sm }}
+            >
+              Let AI Suggest Route
+            </Button>
+          </View>
+        )}
       </View>
     );
   };
 
-  const renderLocationSelector = () => {
-    if (availableLocations.length === 0) return null;
+  const renderLocationItem = ({ item }: { item: Location }) => {
+    const isStartSelected = selectedStartLocation?.id === item.id;
+    const isDestSelected = selectedDestLocation?.id === item.id;
+    const isDisabled = (selectedStartLocation?.id === item.id && selectedDestLocation?.id === item.id);
 
     return (
-      <View style={[styles.locationSelectorContainer, { backgroundColor: theme.colors.surface }]}>
-        <Text variant="titleMedium" style={{ color: theme.colors.text, marginBottom: theme.spacing.sm }}>
-          Select Locations
-        </Text>
-        
-        <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant, marginBottom: theme.spacing.xs }}>
-          Starting Location:
-        </Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: theme.spacing.md }}>
-          <View style={{ flexDirection: "row", gap: theme.spacing.xs }}>
-            {availableLocations.map((loc) => (
-              <Chip
-                key={`start-${loc.id}`}
-                selected={selectedStartLocation?.id === loc.id}
-                onPress={() => handleLocationSelect(loc, "start")}
-                style={{
-                  backgroundColor: selectedStartLocation?.id === loc.id
-                    ? theme.colors.primary
-                    : theme.colors.surfaceVariant,
-                }}
-              >
-                <Text
-                  variant="labelSmall"
-                  style={{
-                    color: selectedStartLocation?.id === loc.id
-                      ? theme.colors.textOnPrimary
-                      : theme.colors.text,
-                  }}
-                >
-                  {loc.name}
-                </Text>
-              </Chip>
-            ))}
+      <Card style={[styles.locationCard, { backgroundColor: theme.colors.surface }]}>
+        <Card.Content>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <View style={{ flex: 1 }}>
+              <Text variant="titleMedium" style={{ color: theme.colors.text, marginBottom: theme.spacing.xs }}>
+                {item.name}
+              </Text>
+              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                {item.type} • {item.latitude.toFixed(4)}, {item.longitude.toFixed(4)}
+              </Text>
+            </View>
           </View>
-        </ScrollView>
-
-        <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant, marginBottom: theme.spacing.xs }}>
-          Destination:
-        </Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: theme.spacing.md }}>
-          <View style={{ flexDirection: "row", gap: theme.spacing.xs }}>
-            {availableLocations.map((loc) => (
-              <Chip
-                key={`dest-${loc.id}`}
-                selected={selectedDestLocation?.id === loc.id}
-                onPress={() => handleLocationSelect(loc, "destination")}
-                style={{
-                  backgroundColor: selectedDestLocation?.id === loc.id
-                    ? theme.colors.primary
-                    : theme.colors.surfaceVariant,
-                }}
-              >
-                <Text
-                  variant="labelSmall"
-                  style={{
-                    color: selectedDestLocation?.id === loc.id
-                      ? theme.colors.textOnPrimary
-                      : theme.colors.text,
-                  }}
-                >
-                  {loc.name}
-                </Text>
-              </Chip>
-            ))}
+          <View style={{ flexDirection: "row", gap: theme.spacing.xs, marginTop: theme.spacing.sm }}>
+            <Chip
+              icon={isStartSelected ? "check" : "map-marker"}
+              selected={isStartSelected}
+              onPress={() => handleLocationSelect(item, "start")}
+              style={{
+                backgroundColor: isStartSelected ? theme.colors.primary : theme.colors.surfaceVariant,
+              }}
+            >
+              <Text style={{ color: isStartSelected ? theme.colors.textOnPrimary : theme.colors.text }}>
+                {isStartSelected ? "Starting Point" : "Set as Start"}
+              </Text>
+            </Chip>
+            <Chip
+              icon={isDestSelected ? "check" : "flag"}
+              selected={isDestSelected}
+              onPress={() => handleLocationSelect(item, "destination")}
+              style={{
+                backgroundColor: isDestSelected ? theme.colors.primary : theme.colors.surfaceVariant,
+              }}
+            >
+              <Text style={{ color: isDestSelected ? theme.colors.textOnPrimary : theme.colors.text }}>
+                {isDestSelected ? "Destination" : "Set as Dest"}
+              </Text>
+            </Chip>
           </View>
-        </ScrollView>
+        </Card.Content>
+      </Card>
+    );
+  };
 
-        <View style={{ flexDirection: "row", gap: theme.spacing.sm }}>
-          <TouchableOpacity
-            style={[
-              styles.locationButton,
-              {
-                backgroundColor: theme.colors.primary,
-                flex: 1,
-                opacity: (selectedStartLocation && selectedDestLocation) ? 1 : 0.5,
-              },
-            ]}
-            onPress={handleConfirmLocations}
-            disabled={!(selectedStartLocation && selectedDestLocation)}
-          >
-            <Text style={{ color: theme.colors.textOnPrimary, fontWeight: "bold" }}>
-              Confirm Selection
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[
-              styles.locationButton,
-              { backgroundColor: theme.colors.secondary, flex: 1 },
-            ]}
-            onPress={() => {
-              setSelectedStartLocation(null);
-              setSelectedDestLocation(null);
-              setAvailableLocations([]);
-              sendMessage("I don't know, please suggest");
+  const filteredLocations = availableLocations.filter((loc) =>
+    loc.name.toLowerCase().includes(locationSearchQuery.toLowerCase()) ||
+    loc.type.toLowerCase().includes(locationSearchQuery.toLowerCase())
+  );
+
+  const renderLocationModal = () => {
+    console.log("Rendering location modal, visible:", showLocationModal, "locations:", availableLocations.length);
+    
+    return (
+      <Modal
+        visible={showLocationModal}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowLocationModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+          <View style={[styles.modalHeader, { backgroundColor: theme.colors.surface }]}>
+            <View style={{ flex: 1 }}>
+              <Text variant="headlineSmall" style={{ color: theme.colors.text }}>
+                Select Locations
+              </Text>
+              <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: theme.spacing.xs }}>
+                Choose your starting point and destination
+              </Text>
+            </View>
+            <IconButton
+              icon="close"
+              size={24}
+              onPress={() => setShowLocationModal(false)}
+            />
+          </View>
+
+          <View style={{ padding: theme.spacing.md }}>
+            <Searchbar
+              placeholder="Search locations..."
+              onChangeText={setLocationSearchQuery}
+              value={locationSearchQuery}
+              style={{ marginBottom: theme.spacing.md }}
+            />
+            
+            {selectedStartLocation && (
+              <Card style={[styles.selectionCard, { backgroundColor: theme.colors.primaryContainer }]}>
+                <Card.Content>
+                  <Text variant="labelSmall" style={{ color: theme.colors.onPrimaryContainer }}>
+                    Starting Location
+                  </Text>
+                  <Text variant="titleMedium" style={{ color: theme.colors.onPrimaryContainer }}>
+                    {selectedStartLocation.name}
+                  </Text>
+                </Card.Content>
+              </Card>
+            )}
+            
+            {selectedDestLocation && (
+              <Card style={[styles.selectionCard, { backgroundColor: theme.colors.secondaryContainer }]}>
+                <Card.Content>
+                  <Text variant="labelSmall" style={{ color: theme.colors.onSecondaryContainer }}>
+                    Destination
+                  </Text>
+                  <Text variant="titleMedium" style={{ color: theme.colors.onSecondaryContainer }}>
+                    {selectedDestLocation.name}
+                  </Text>
+                </Card.Content>
+              </Card>
+            )}
+          </View>
+
+          <FlatList
+            data={filteredLocations}
+            renderItem={renderLocationItem}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{
+              padding: theme.spacing.md,
+              paddingTop: 0,
+              paddingBottom: 120,
             }}
-          >
-            <Text style={{ color: theme.colors.textOnPrimary, fontWeight: "bold" }}>
+            ListEmptyComponent={
+              <Text style={{ textAlign: "center", color: theme.colors.onSurfaceVariant, marginTop: theme.spacing.xl }}>
+                No locations found
+              </Text>
+            }
+          />
+
+          <View style={[styles.modalFooter, { backgroundColor: theme.colors.surface }]}>
+            <Button
+              mode="outlined"
+              onPress={handleSkipLocationSelection}
+              style={{ flex: 1 }}
+            >
               Let AI Suggest
-            </Text>
-          </TouchableOpacity>
+            </Button>
+            <Button
+              mode="contained"
+              onPress={handleConfirmLocations}
+              disabled={!(selectedStartLocation && selectedDestLocation)}
+              style={{ flex: 1 }}
+            >
+              Confirm ({selectedStartLocation && selectedDestLocation ? "2" : selectedStartLocation || selectedDestLocation ? "1" : "0"} selected)
+            </Button>
+          </View>
         </View>
-      </View>
+      </Modal>
     );
   };
 
@@ -385,21 +482,34 @@ const TripPlannerPage = observer(() => {
       marginRight: theme.spacing.sm,
       backgroundColor: theme.colors.background,
     },
-    locationSelectorContainer: {
-      padding: theme.spacing.md,
-      paddingBottom: NAVBAR_HEIGHT + theme.spacing.md,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.outline,
-      backgroundColor: theme.colors.surface,
-    },
-    locationButton: {
-      padding: theme.spacing.md,
-      borderRadius: theme.spacing.sm,
-      alignItems: "center",
-    },
     viewPlanButton: {
       margin: theme.spacing.md,
       borderRadius: theme.spacing.sm,
+    },
+    locationCard: {
+      marginBottom: theme.spacing.md,
+      elevation: 2,
+    },
+    modalHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      padding: theme.spacing.lg,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.outline,
+    },
+    modalFooter: {
+      flexDirection: "row",
+      gap: theme.spacing.md,
+      padding: theme.spacing.lg,
+      borderTopWidth: 1,
+      borderTopColor: theme.colors.outline,
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+    },
+    selectionCard: {
+      marginBottom: theme.spacing.sm,
     },
   });
 
@@ -447,7 +557,7 @@ const TripPlannerPage = observer(() => {
           )}
         </ScrollView>
 
-        {renderLocationSelector()}
+        {renderLocationModal()}
 
         <View style={styles.inputContainer}>
           <TextInput
@@ -457,7 +567,7 @@ const TripPlannerPage = observer(() => {
             placeholder="Type your message..."
             style={styles.textInput}
             onSubmitEditing={handleSendMessage}
-            disabled={isLoading || availableLocations.length > 0}
+            disabled={isLoading}
             multiline
             numberOfLines={1}
             maxLength={500}
@@ -467,7 +577,7 @@ const TripPlannerPage = observer(() => {
             size={24}
             iconColor={theme.colors.primary}
             onPress={handleSendMessage}
-            disabled={isLoading || !inputMessage.trim() || availableLocations.length > 0}
+            disabled={isLoading || !inputMessage.trim()}
           />
         </View>
       </KeyboardAvoidingView>
