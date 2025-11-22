@@ -5,21 +5,31 @@ import { Routes } from "@/app/composable/routes";
 import { router } from "expo-router";
 import { ScrollView, View, StyleSheet } from "react-native";
 import { Text, Card, Divider, Chip, Button } from "react-native-paper";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { observer } from "mobx-react-lite";
+import { useFocusEffect } from "@react-navigation/native";
 
 const TripPlanResultPage = observer(() => {
   const { theme } = useAppTheme();
   const appStore = useAppStore();
+  const [tripPlan, setTripPlan] = useState(appStore.tripPlan);
+  const [conversationId, setConversationId] = useState(appStore.conversationId);
   
-  // Get trip plan from app state
-  const tripPlan = appStore.tripPlan;
-  const conversationId = appStore.conversationId;
+  // Update trip plan when screen comes into focus or when appStore changes
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log("=== Screen focused, refreshing trip plan ===");
+      console.log("Current appStore.tripPlan length:", appStore.tripPlan.length);
+      setTripPlan(appStore.tripPlan);
+      setConversationId(appStore.conversationId);
+      
+      if (appStore.tripPlan.length > 0) {
+        console.log("Trip plan preview:", appStore.tripPlan.substring(0, 200));
+      }
+    }, [appStore.tripPlan, appStore.conversationId])
+  );
   
-  console.log("Trip plan from state length:", tripPlan.length);
-  if (tripPlan.length > 0) {
-    console.log("Trip plan preview:", tripPlan.substring(0, 200));
-  }
+  console.log("Rendering with trip plan length:", tripPlan.length);
 
   // Parse markdown into structured components
   const parseMarkdown = (markdown: string) => {

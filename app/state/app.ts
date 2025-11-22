@@ -15,7 +15,12 @@ export class AppState {
   }
 
   setTripPlan(plan: string) {
+    console.log("=== AppStore.setTripPlan called ===");
+    console.log("Old plan length:", this.tripPlan.length);
+    console.log("New plan length:", plan.length);
+    console.log("New plan preview (first 200):", plan.substring(0, 200));
     this.tripPlan = plan;
+    console.log("Updated! Current tripPlan length:", this.tripPlan.length);
   }
 
   clearTripPlan() {

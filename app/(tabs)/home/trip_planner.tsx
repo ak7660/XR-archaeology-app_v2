@@ -124,6 +124,13 @@ const TripPlannerPage = observer(() => {
       console.log("Stage:", data.stage);
       console.log("Available locations:", data.available_locations?.length || 0);
       console.log("First location:", data.available_locations?.[0]);
+      console.log("Message length:", data.message.length);
+      console.log("Message preview:", data.message.substring(0, 200));
+      console.log("Has trip_plan field:", !!data.trip_plan);
+      if (data.trip_plan) {
+        console.log("trip_plan length:", data.trip_plan.length);
+        console.log("trip_plan preview:", data.trip_plan.substring(0, 200));
+      }
 
       // Store conversation ID
       if (data.conversation_id) {
@@ -157,9 +164,26 @@ const TripPlannerPage = observer(() => {
       };
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // If trip plan is generated, store it
-      if (data.trip_plan) {
+      // Store trip plan - during refinement, the updated plan is in message field
+      if (data.stage === "refining_plan" && data.message.includes("#")) {
+        // During refinement, the latest plan is in the message field
+        console.log("=== REFINED PLAN IN MESSAGE (refining_plan stage) ===");
+        console.log("Message length:", data.message.length);
+        console.log("First 300 chars:", data.message.substring(0, 300));
+        console.log("Storing message as tripPlan...");
+        appStore.setTripPlan(data.message);
+        console.log("Stored! appStore.tripPlan length:", appStore.tripPlan.length);
+      } else if (data.trip_plan) {
+        // Initial generation or other stages - use trip_plan field
+        console.log("=== NEW TRIP PLAN RECEIVED (from trip_plan field) ===");
+        console.log("Trip plan length:", data.trip_plan.length);
+        console.log("First 300 chars:", data.trip_plan.substring(0, 300));
+        console.log("Storing in appStore...");
         appStore.setTripPlan(data.trip_plan);
+        console.log("Stored! appStore.tripPlan length:", appStore.tripPlan.length);
+        console.log("First 200 chars from store:", appStore.tripPlan.substring(0, 200));
+      } else {
+        console.log("No trip_plan in response, stage:", data.stage);
       }
 
     } catch (error) {
@@ -242,15 +266,21 @@ const TripPlannerPage = observer(() => {
           style={[
             styles.messageBubble,
             isUser
-              ? { backgroundColor: theme.colors.primary }
-              : { backgroundColor: theme.colors.surfaceVariant },
+              ? { 
+                  backgroundColor: theme.colors.primary,
+                  borderBottomRightRadius: 4,
+                }
+              : { 
+                  backgroundColor: theme.colors.surfaceVariant,
+                  borderBottomLeftRadius: 4,
+                },
           ]}
         >
           <Text
             variant="bodyMedium"
             style={{
               color: isUser ? theme.colors.textOnPrimary : theme.colors.text,
-              lineHeight: 20,
+              lineHeight: 22,
             }}
           >
             {message.content}
@@ -258,8 +288,9 @@ const TripPlannerPage = observer(() => {
           <Text
             variant="labelSmall"
             style={{
-              color: isUser ? theme.colors.textOnPrimary + "CC" : theme.colors.onSurfaceVariant,
+              color: isUser ? theme.colors.textOnPrimary + "AA" : theme.colors.onSurfaceVariant,
               marginTop: theme.spacing.xs,
+              fontSize: 11,
             }}
           >
             {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -273,16 +304,16 @@ const TripPlannerPage = observer(() => {
               icon="map-marker-multiple"
               onPress={() => setShowLocationModal(true)}
               style={{ borderRadius: theme.spacing.sm }}
+              contentStyle={{ paddingVertical: theme.spacing.xs }}
             >
-              <Text style={{ color: theme.colors.textOnPrimary }}>
-                Choose from {availableLocations.length} Locations
-              </Text>
+              Choose from {availableLocations.length} Locations
             </Button>
             <Button
               mode="outlined"
               icon="auto-fix"
               onPress={handleSkipLocationSelection}
               style={{ borderRadius: theme.spacing.sm }}
+              contentStyle={{ paddingVertical: theme.spacing.xs }}
             >
               Let AI Suggest Route
             </Button>
@@ -429,6 +460,8 @@ const TripPlannerPage = observer(() => {
               mode="outlined"
               onPress={handleSkipLocationSelection}
               style={{ flex: 1 }}
+              contentStyle={{ paddingVertical: theme.spacing.sm }}
+              labelStyle={{ fontSize: 13 }}
             >
               Let AI Suggest
             </Button>
@@ -437,8 +470,10 @@ const TripPlannerPage = observer(() => {
               onPress={handleConfirmLocations}
               disabled={!(selectedStartLocation && selectedDestLocation)}
               style={{ flex: 1 }}
+              contentStyle={{ paddingVertical: theme.spacing.sm }}
+              labelStyle={{ fontSize: 13 }}
             >
-              Confirm ({selectedStartLocation && selectedDestLocation ? "2" : selectedStartLocation || selectedDestLocation ? "1" : "0"} selected)
+              Confirm ({selectedStartLocation && selectedDestLocation ? "2" : selectedStartLocation || selectedDestLocation ? "1" : "0"})
             </Button>
           </View>
         </View>
@@ -447,6 +482,9 @@ const TripPlannerPage = observer(() => {
   };
 
   const styles = StyleSheet.create({
+    pageContainer: {
+      flex: 1,
+    },
     container: {
       flex: 1,
     },
@@ -467,20 +505,37 @@ const TripPlannerPage = observer(() => {
     messageBubble: {
       padding: theme.spacing.md,
       borderRadius: theme.spacing.md,
+      elevation: 1,
     },
     inputContainer: {
       flexDirection: "row",
-      alignItems: "center",
-      padding: theme.spacing.md,
-      paddingBottom: NAVBAR_HEIGHT + theme.spacing.md,
+      alignItems: "flex-end",
+      gap: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
+      paddingTop: theme.spacing.md,
+      paddingBottom: NAVBAR_HEIGHT + theme.spacing.lg,
       backgroundColor: theme.colors.surface,
       borderTopWidth: 1,
       borderTopColor: theme.colors.outline,
+      elevation: 4,
+    },
+    inputWrapper: {
+      flex: 1,
+      position: "relative",
     },
     textInput: {
-      flex: 1,
-      marginRight: theme.spacing.sm,
       backgroundColor: theme.colors.background,
+      maxHeight: 120,
+      minHeight: 52,
+      fontSize: 15,
+    },
+    inputActions: {
+      position: "absolute",
+      bottom: 6,
+      right: 12,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing.xs,
     },
     viewPlanButton: {
       margin: theme.spacing.md,
@@ -499,8 +554,10 @@ const TripPlannerPage = observer(() => {
     },
     modalFooter: {
       flexDirection: "row",
-      gap: theme.spacing.md,
-      padding: theme.spacing.lg,
+      gap: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.md,
+      paddingBottom: theme.spacing.lg,
       borderTopWidth: 1,
       borderTopColor: theme.colors.outline,
       position: "absolute",
@@ -515,26 +572,39 @@ const TripPlannerPage = observer(() => {
 
   return (
     <MainBody padding={{ top: 0, bottom: 0 }}>
-      <AppBar title="AI Trip Planner" showBack />
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-      >
-        <ScrollView
-          ref={scrollViewRef}
+      <View style={styles.pageContainer}>
+        <AppBar title="AI Trip Planner" showBack />
+        <KeyboardAvoidingView
           style={styles.container}
-          contentContainerStyle={[
-            styles.messagesContainer,
-            { paddingBottom: theme.spacing.md },
-          ]}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
         >
-          {messages.map((message, index) => renderMessage(message, index))}
+          <ScrollView
+            ref={scrollViewRef}
+            style={styles.container}
+            contentContainerStyle={[
+              styles.messagesContainer,
+              { paddingBottom: theme.spacing.md },
+            ]}
+          >
+            {messages.map((message, index) => renderMessage(message, index))}
           
           {isLoading && (
             <View style={[styles.messageContainer, styles.assistantMessageContainer]}>
-              <View style={[styles.messageBubble, { backgroundColor: theme.colors.surfaceVariant }]}>
-                <ActivityIndicator size="small" color={theme.colors.primary} />
+              <View style={[
+                styles.messageBubble, 
+                { 
+                  backgroundColor: theme.colors.surfaceVariant,
+                  borderBottomLeftRadius: 4,
+                  paddingVertical: theme.spacing.md + 2,
+                }
+              ]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs }}>
+                  <ActivityIndicator size="small" color={theme.colors.primary} />
+                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                    Typing...
+                  </Text>
+                </View>
               </View>
             </View>
           )}
@@ -560,27 +630,61 @@ const TripPlannerPage = observer(() => {
         {renderLocationModal()}
 
         <View style={styles.inputContainer}>
-          <TextInput
-            mode="outlined"
-            value={inputMessage}
-            onChangeText={setInputMessage}
-            placeholder="Type your message..."
-            style={styles.textInput}
-            onSubmitEditing={handleSendMessage}
-            disabled={isLoading}
-            multiline
-            numberOfLines={1}
-            maxLength={500}
-          />
+          <View style={styles.inputWrapper}>
+            <TextInput
+              mode="outlined"
+              value={inputMessage}
+              onChangeText={setInputMessage}
+              placeholder="Type your message..."
+              placeholderTextColor={theme.colors.onSurfaceVariant + "99"}
+              style={styles.textInput}
+              contentStyle={{ 
+                paddingTop: theme.spacing.md,
+                paddingBottom: theme.spacing.md,
+                paddingHorizontal: theme.spacing.md,
+              }}
+              outlineStyle={{
+                borderRadius: theme.spacing.lg,
+                borderWidth: 1.5,
+                borderColor: inputMessage.trim() ? theme.colors.primary : theme.colors.outline,
+              }}
+              onSubmitEditing={handleSendMessage}
+              disabled={isLoading}
+              multiline
+              numberOfLines={1}
+              maxLength={500}
+              returnKeyType="send"
+              blurOnSubmit={false}
+              dense={false}
+            />
+            {/* <View style={styles.inputActions}>
+              <Text 
+                variant="labelSmall" 
+                style={{ 
+                  color: theme.colors.onSurfaceVariant,
+                  opacity: inputMessage.length > 400 ? 1 : 0.6,
+                }}
+              >
+                {inputMessage.length}/500
+              </Text>
+            </View> */}
+          </View>
           <IconButton
             icon="send"
-            size={24}
-            iconColor={theme.colors.primary}
+            size={26}
+            iconColor={inputMessage.trim() && !isLoading ? theme.colors.textOnPrimary : theme.colors.onSurfaceVariant}
             onPress={handleSendMessage}
             disabled={isLoading || !inputMessage.trim()}
+            mode={inputMessage.trim() && !isLoading ? "contained" : "outlined"}
+            containerColor={inputMessage.trim() && !isLoading ? theme.colors.primary : "transparent"}
+            style={{ 
+              margin: 0,
+              marginBottom: 6,
+            }}
           />
         </View>
       </KeyboardAvoidingView>
+      </View>
     </MainBody>
   );
 });
