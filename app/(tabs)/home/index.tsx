@@ -119,56 +119,23 @@ export default function Home() {
             </Pressable>
           </Link>
           <View style={style.entryContainer}>{Entries.map((v, index) => CardView({ ...v, index }))}</View>
-          
-          {/* Trip Planner Button - Centered below cards */}
-          <View style={{ alignItems: "center", marginTop: theme.spacing.md }}>
-            <Button
-              mode="contained"
-              icon="plus"
-              onPress={() => router.push(Routes.TripPlanner)}
-              style={{ borderRadius: theme.spacing.sm }}
-              contentStyle={{ paddingVertical: theme.spacing.xs }}
-            >
-              <Text variant="labelLarge" style={{ color: theme.colors.textOnPrimary }}>
-                Plan Your Trip
-              </Text>
-            </Button>
-          </View>
         </View>
-        {/* Login / Favorite Place*/}
+        
+        {/* Plan Trip Section */}
         <View
           style={[style.loginSection, isPortrait(orientation) ? { paddingBottom: NAVBAR_HEIGHT } : {}]}
         >
-          {!authenticated ? (
-            <View style={{ flexDirection: "column", gap: theme.spacing.sm }}>
-              <Text variant="bodyMedium" style={{ color: theme.colors.grey3 }}>
-                {t("auth.login")} / {t("auth.signup")}
-              </Text>
-              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                <Button
-                  textColor={theme.colors.textOnPrimary}
-                  mode="contained"
-                  style={{ borderRadius: theme.spacing.xs }}
-                  onPress={() => router.push(Routes.Login)}
-                >
-                  {t("auth.login")}
-                </Button>
-                <Button
-                  mode="outlined"
-                  style={{ borderRadius: theme.spacing.xs, borderColor: theme.colors.primary, borderWidth: 2 }}
-                  onPress={() => router.push(Routes.Register)}
-                >
-                  {t("auth.signup")}
-                </Button>
-              </View>
-            </View>
-          ) : (
-            <Button mode="contained" style={{ width: "100%", borderRadius: theme.spacing.xs }}>
-              <Text variant="labelLarge" style={{ color: theme.colors.textOnPrimary }}>
-                {t("home.yourFavoritePlaces")}
-              </Text>
-            </Button>
-          )}
+          <Button
+            mode="contained"
+            icon="map-marker-path"
+            onPress={() => router.push(Routes.TripPlanner)}
+            style={{ borderRadius: theme.spacing.xs }}
+            contentStyle={{ paddingVertical: theme.spacing.xs }}
+          >
+            <Text variant="labelLarge" style={{ color: theme.colors.textOnPrimary }}>
+              Plan Your Trip
+            </Text>
+          </Button>
           <View style={style.divider} />
         </View>
 
