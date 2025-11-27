@@ -1,3 +1,6 @@
+// Load environment variables
+require('dotenv').config();
+
 module.exports = function (api) {
   api.cache(true);
   return {
@@ -23,6 +26,19 @@ module.exports = function (api) {
           },
           extensions: [".js", ".jsx", ".ts", ".tsx"],
         },
+      ],
+      // Inline environment variables at build time
+      [
+        "transform-inline-environment-variables",
+        {
+          include: [
+            "EXPO_PUBLIC_API_URL",
+            "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY",
+            "EXPO_PUBLIC_TRIP_PLAN_API_URL",
+            "EXPO_PUBLIC_TRIP_PLAN_API_KEY",
+            "EXPO_PUBLIC_PREFIX"
+          ]
+        }
       ],
     ],
   };

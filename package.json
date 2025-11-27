@@ -89,6 +89,7 @@
     "@types/react-dom": "~18.0.10",
     "@types/react-native": "^0.73.0",
     "@types/three": "^0.156.0",
+    "babel-plugin-transform-inline-environment-variables": "^0.4.4",
     "dotenv": "^16.4.5",
     "expo-asset": "~8.10.1",
     "react-native-svg-transformer": "^1.1.0"
