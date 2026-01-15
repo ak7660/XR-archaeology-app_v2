@@ -39,8 +39,19 @@ export default function Page() {
         return;
       }
       try {
-        const res = await feathers.service(service).get(id, { query: { $populate: ["tags"] } });
+        // Only populate tags for attractions service to avoid "cannot populate path 'tags'" error
+        const query = service === "attractions" ? { $populate: ["tags"] } : {};
+        const res = await feathers.service(service).get(id, { query });
         setItem(res);
+      } catch (error) {
+        console.warn(`Detail page fetch error for service ${service}:`, error);
+        // Fallback: try fetching without populate if it failed
+        try {
+          const res = await feathers.service(service).get(id);
+          setItem(res);
+        } catch (retryError) {
+          console.error("Final fetch failure on detail page:", retryError);
+        }
       } finally {
         setLoaded(true);
       }

@@ -7,7 +7,6 @@ module.exports = function (api) {
     presets: ["babel-preset-expo"],
     plugins: [
       "@babel/plugin-proposal-export-namespace-from",
-      "react-native-reanimated/plugin",
       "expo-router/babel",
       ["@babel/plugin-transform-flow-strip-types"],
       ["@babel/plugin-proposal-decorators", { legacy: true }],
@@ -40,6 +39,8 @@ module.exports = function (api) {
           ]
         }
       ],
+      // Reanimated plugin must run last
+      "react-native-reanimated/plugin",
     ],
   };
 };

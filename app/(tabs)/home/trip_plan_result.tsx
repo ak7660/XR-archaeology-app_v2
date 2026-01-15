@@ -76,7 +76,8 @@ const TripPlanResultPage = observer(() => {
             <Text style={{ fontWeight: 'bold', color: theme.colors.primary }}>
               {parts[1]}:
             </Text>
-            {' ' + parts.slice(2).join('').trim()}
+            {' '}
+            {formatInlineText(parts.slice(2).join('').trim())}
           </Text>
         );
       }
@@ -96,11 +97,11 @@ const TripPlanResultPage = observer(() => {
             </Text>
             {activity.title && (
               <Text variant="titleSmall" style={styles.activityTitle}>
-                {activity.title}
+                {formatInlineText(activity.title)}
               </Text>
             )}
             <Text variant="bodyMedium" style={styles.activityDescription}>
-              {activity.description}
+              {formatInlineText(activity.description)}
             </Text>
             {activity.cost && (
               <Chip icon="cash" compact style={styles.costChip}>
@@ -144,18 +145,55 @@ const TripPlanResultPage = observer(() => {
   };
 
   // Parse activity line (e.g., "08:00–09:15  Breakfast: **Bubby's** – details; $22 pp")
+  // Map services to their specific detail routes
+  const getDetailRoute = (service: string, id: string) => {
+    switch (service) {
+      case 'experience':
+        return { 
+          pathname: Routes.ExperienceDetail, 
+          params: { id } 
+        };
+      case 'routes':
+        return { 
+          pathname: Routes.Route, 
+          params: { id } 
+        };
+      case 'events':
+      case 'event':
+        // Ensure leading slash if missing in enum
+        const eventPath = Routes.Event.startsWith('/') ? Routes.Event : `/${Routes.Event}`;
+        return { 
+          pathname: eventPath as any, 
+          params: { id } 
+        };
+      case 'artifacts':
+      case 'artifact':
+        return { 
+          pathname: '/detail' as any, 
+          params: { id } 
+        };
+      case 'attractions':
+      default:
+        return { 
+          pathname: Routes.Detail, 
+          params: { id, service: 'attractions' } 
+        };
+    }
+  };
+
   const parseActivityLine = (line: string) => {
     const timeMatch = line.match(/^(\d{2}:\d{2}[–-]\d{2}:\d{2}|\d{2}:\d{2})/);
     const time = timeMatch ? timeMatch[1] : '';
     
     let rest = line.substring(time.length).trim();
     
-    // Extract bold title (if exists)
-    const titleMatch = rest.match(/\*\*([^*]+)\*\*/);
-    const title = titleMatch ? titleMatch[1] : '';
+    // Extract title (could be bold **title** or link [title](url))
+    const titleRegex = /\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)]+)\)/;
+    const titleMatch = rest.match(titleRegex);
+    const title = titleMatch ? titleMatch[0] : ''; // Keep full match to parse in formatInlineText
     
-    // Remove bold markers for description
-    rest = rest.replace(/\*\*[^*]+\*\*/, '').trim();
+    // Remove title part for description
+    rest = rest.replace(titleRegex, '').trim();
     
     // Extract cost
     const costMatch = rest.match(/\$\d+(\.\d{2})?\s*(pp|per person|total)?/i);
@@ -167,23 +205,61 @@ const TripPlanResultPage = observer(() => {
     return { time, title, description, cost };
   };
 
-  // Format inline text (handle **bold**)
+  // Format inline text (handle **bold** and [links](url))
   const formatInlineText = (text: string) => {
     const parts: (string | JSX.Element)[] = [];
     let lastIndex = 0;
-    const boldRegex = /\*\*([^*]+)\*\*/g;
+    // Regex for bold **text** or [link](url)
+    const combinedRegex = /\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)]+)\)/g;
     let match;
     let elemKey = 0;
 
-    while ((match = boldRegex.exec(text)) !== null) {
+    while ((match = combinedRegex.exec(text)) !== null) {
       if (match.index > lastIndex) {
         parts.push(text.substring(lastIndex, match.index));
       }
-      parts.push(
-        <Text key={`bold-${elemKey++}`} style={{ fontWeight: 'bold', color: theme.colors.primary }}>
-          {match[1]}
-        </Text>
-      );
+
+      if (match[1]) {
+        // Bold match
+        parts.push(
+          <Text key={`bold-${elemKey++}`} style={{ fontWeight: 'bold', color: theme.colors.primary }}>
+            {match[1]}
+          </Text>
+        );
+      } else if (match[2] && match[3]) {
+        // Link match
+        const label = match[2];
+        const url = match[3];
+
+        if (url.startsWith('location:')) {
+          const parts_url = url.replace('location:', '').split('/');
+          const service = parts_url[0];
+          const id = parts_url[1];
+          
+          parts.push(
+            <Text 
+              key={`link-${elemKey++}`} 
+              style={{ 
+                fontWeight: 'bold', 
+                color: theme.colors.primary,
+                textDecorationLine: 'underline'
+              }}
+              onPress={() => {
+                const route = getDetailRoute(service, id);
+                router.push(route);
+              }}
+            >
+              {label}
+            </Text>
+          );
+        } else {
+          parts.push(
+            <Text key={`link-${elemKey++}`} style={{ color: theme.colors.primary }}>
+              {label}
+            </Text>
+          );
+        }
+      }
       lastIndex = match.index + match[0].length;
     }
 
