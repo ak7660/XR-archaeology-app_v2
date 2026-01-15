@@ -1,4 +1,4 @@
-package hk.hku.apsapapp;
+package com.ahmadhassan44.xrarchaeology;
 
 import android.os.Build;
 import android.os.Bundle;

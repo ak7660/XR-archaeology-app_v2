@@ -1,4 +1,4 @@
-package hk.hku.apsapapp;
+package com.ahmadhassan44.xrarchaeology;
 
 import android.app.Application;
 import android.content.res.Configuration;

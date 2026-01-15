@@ -71,6 +71,28 @@ export const WALL_INFOS: {
     model: require("@assets/models/wall/wall1.glb"),
     images: [require("@/assets/images/wall4.jpg")],
   },
+  {
+    id: 4,
+    point: {
+      latitude: 22.284631161261558,
+      longitude: 114.13600909459755,
+    },
+    name: "Chi Wah Learning Common",
+    briefDesc: "HKU Chi Wah Learning Common AR Test Point",
+    model: require("@assets/models/wall/wall1.glb"),
+    images: [require("@/assets/images/wall2.jpg")],
+  },
+  {
+    id: 5,
+    point: {
+      latitude: 22.284563327620024,
+      longitude: 114.13590364062306,
+    },
+    name: "Run Run Shaw Tower",
+    briefDesc: "HKU Run Run Shaw Tower AR Test Point",
+    model: require("@assets/models/wall/wall2.glb"),
+    images: [require("@/assets/images/wall3.jpg")],
+  },
 ] as const;
 
 export const vedi_point = {
