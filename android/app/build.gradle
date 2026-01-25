@@ -81,9 +81,9 @@ android {
 
     compileSdkVersion rootProject.ext.compileSdkVersion
 
-    namespace 'com.ahmadhassan44.xrarchaeology'
+    namespace 'hk.hku.apsapapp'
     defaultConfig {
-        applicationId 'com.ahmadhassan44.xrarchaeology'
+        applicationId 'hk.hku.apsapapp'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
