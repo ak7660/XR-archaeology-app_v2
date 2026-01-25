@@ -1,9 +1,9 @@
-import { AppBar, MainBody, NAVBAR_HEIGHT } from "@/components";
+import { AppBar, MainBody, NAVBAR_HEIGHT, LocationCard } from "@/components";
 import { useAppTheme } from "@/providers/style_provider";
 import { useAppStore } from "@/app/state/app";
 import { Routes } from "@/app/composable/routes";
 import { router } from "expo-router";
-import { ScrollView, View, StyleSheet } from "react-native";
+import { ScrollView, View, StyleSheet, Alert } from "react-native";
 import { Text, Card, Divider, Chip, Button } from "react-native-paper";
 import React, { useState, useEffect } from "react";
 import { observer } from "mobx-react-lite";
@@ -131,6 +131,33 @@ const TripPlanResultPage = observer(() => {
           </Text>
         );
       }
+      // Location card lines (standalone location links)
+      else if (hasLocationLink(trimmed)) {
+        const locationData = extractLocationLink(trimmed);
+        if (locationData) {
+          elements.push(
+            <View key={`location-card-${key++}`} style={{ marginVertical: theme.spacing.xs }}>
+              <LocationCard
+                label={locationData.label}
+                service={locationData.service}
+                id={locationData.id}
+                onPress={() => {
+                  try {
+                    const route = getDetailRoute(locationData.service, locationData.id);
+                    if (route) {
+                      router.push(route);
+                    } else {
+                      Alert.alert("Navigation Error", `Could not resolve route for ${locationData.service}/${locationData.id}`);
+                    }
+                  } catch (navError: any) {
+                    Alert.alert("Navigation Error", navError?.message || "Unknown error");
+                  }
+                }}
+              />
+            </View>
+          );
+        }
+      }
       // Regular paragraph
       else {
         elements.push(
@@ -146,38 +173,53 @@ const TripPlanResultPage = observer(() => {
 
   // Parse activity line (e.g., "08:00–09:15  Breakfast: **Bubby's** – details; $22 pp")
   // Map services to their specific detail routes
+  // Map services to their specific detail routes
   const getDetailRoute = (service: string, id: string) => {
-    switch (service) {
-      case 'experience':
-        return { 
-          pathname: Routes.ExperienceDetail, 
-          params: { id } 
-        };
-      case 'routes':
-        return { 
-          pathname: Routes.Route, 
-          params: { id } 
-        };
-      case 'events':
-      case 'event':
-        // Ensure leading slash if missing in enum
-        const eventPath = Routes.Event.startsWith('/') ? Routes.Event : `/${Routes.Event}`;
-        return { 
-          pathname: eventPath as any, 
-          params: { id } 
-        };
-      case 'artifacts':
-      case 'artifact':
-        return { 
-          pathname: '/detail' as any, 
-          params: { id } 
-        };
-      case 'attractions':
-      default:
-        return { 
-          pathname: Routes.Detail, 
-          params: { id, service: 'attractions' } 
-        };
+    try {
+      if (!id) return null;
+      
+      const s = service?.toLowerCase() || 'attractions';
+
+      switch (s) {
+        case 'experience':
+        case 'workshop':
+          return { 
+            pathname: Routes.ExperienceDetail || "/home/experience_detail", 
+            params: { id } 
+          };
+        case 'routes':
+        case 'hiking':
+        case 'trail':
+          return { 
+            pathname: Routes.Route || "/home/route", 
+            params: { id } 
+          };
+        case 'events':
+        case 'event':
+          // Safely handle missing slash in enum
+          const rawEventPath = Routes.Event || "home/event";
+          const eventPath = rawEventPath.startsWith('/') ? rawEventPath : `/${rawEventPath}`;
+          return { 
+            pathname: eventPath as any, 
+            params: { id } 
+          };
+        case 'artifacts':
+        case 'artifact':
+        case 'museum':
+          return { 
+            pathname: '/detail' as any, 
+            params: { id } 
+          };
+        case 'attractions':
+        default:
+          return { 
+            pathname: Routes.Detail || "/home/detail", 
+            params: { id, service: s } 
+          };
+      }
+    } catch (e) {
+      console.error("Error in getDetailRoute:", e);
+      return null;
     }
   };
 
@@ -205,38 +247,59 @@ const TripPlanResultPage = observer(() => {
     return { time, title, description, cost };
   };
 
+  // Check if text contains location links
+  const hasLocationLink = (text: string): boolean => {
+    return /\[(.*?)\]\(location:.*?\)/.test(text);
+  };
+
+  // Extract location link data
+  const extractLocationLink = (text: string) => {
+    const match = text.match(/\[(.*?)\]\(location:(.*?)\/([^)]*)\)/);
+    if (match) {
+      return {
+        label: match[1],
+        service: match[2],
+        id: match[3],
+      };
+    }
+    return null;
+  };
+
   // Format inline text (handle **bold** and [links](url))
   const formatInlineText = (text: string) => {
-    const parts: (string | JSX.Element)[] = [];
-    let lastIndex = 0;
-    // Regex for bold **text** or [link](url)
-    const combinedRegex = /\*\*([^*]+)\*\*|\[([^\]]+)\]\(([^)]+)\)/g;
-    let match;
+    if (!text) return [];
+    
+    // Split text by bold markers or links, capturing the delimiters
+    // Use non-greedy quantifiers to handle multiple matches in one line
+    const combinedRegex = /(\*\*.*?\*\*|\[.*?\]\(.*?\))/g;
+    const parts = text.split(combinedRegex);
+    
     let elemKey = 0;
+    return parts.map((part, index) => {
+      if (!part) return null;
 
-    while ((match = combinedRegex.exec(text)) !== null) {
-      if (match.index > lastIndex) {
-        parts.push(text.substring(lastIndex, match.index));
-      }
-
-      if (match[1]) {
-        // Bold match
-        parts.push(
+      // Check for bold match: **text**
+      const boldMatch = part.match(/^\*\*(.*?)\*\*$/);
+      if (boldMatch) {
+        return (
           <Text key={`bold-${elemKey++}`} style={{ fontWeight: 'bold', color: theme.colors.primary }}>
-            {match[1]}
+            {boldMatch[1]}
           </Text>
         );
-      } else if (match[2] && match[3]) {
-        // Link match
-        const label = match[2];
-        const url = match[3];
+      }
+
+      // Check for link match: [label](url)
+      const linkMatch = part.match(/^\[(.*?)\]\((.*?)\)$/);
+      if (linkMatch) {
+        const label = linkMatch[1];
+        const url = linkMatch[2];
 
         if (url.startsWith('location:')) {
           const parts_url = url.replace('location:', '').split('/');
           const service = parts_url[0];
           const id = parts_url[1];
           
-          parts.push(
+          return (
             <Text 
               key={`link-${elemKey++}`} 
               style={{ 
@@ -245,29 +308,34 @@ const TripPlanResultPage = observer(() => {
                 textDecorationLine: 'underline'
               }}
               onPress={() => {
-                const route = getDetailRoute(service, id);
-                router.push(route);
+                try {
+                  const route = getDetailRoute(service, id);
+                  if (route) {
+                    console.log(`Navigating to: ${JSON.stringify(route)}`);
+                    router.push(route);
+                  } else {
+                    Alert.alert("Navigation Error", `Could not resolve route for ${service}/${id}`);
+                  }
+                } catch (navError: any) {
+                  Alert.alert("Navigation Crash", navError?.message || "Unknown navigation error");
+                }
               }}
             >
               {label}
             </Text>
           );
         } else {
-          parts.push(
+          return (
             <Text key={`link-${elemKey++}`} style={{ color: theme.colors.primary }}>
               {label}
             </Text>
           );
         }
       }
-      lastIndex = match.index + match[0].length;
-    }
 
-    if (lastIndex < text.length) {
-      parts.push(text.substring(lastIndex));
-    }
-
-    return parts.length > 0 ? parts : text;
+      // Return plain text for everything else
+      return part;
+    }).filter(p => p !== null);
   };
 
   const styles = StyleSheet.create({

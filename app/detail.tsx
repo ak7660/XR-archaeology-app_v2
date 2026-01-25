@@ -1,20 +1,22 @@
 import { Text } from "react-native-paper";
-import { MainBody, IconBtn, AudioPlayer, ModelView, LoadingPage } from "@components";
+import { MainBody, IconBtn, AudioPlayer, ModelView, LoadingPage, ErrorPage } from "@components";
 import { View, StyleSheet } from "react-native";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import BottomSheet, { BottomSheetScrollView, BottomSheetScrollViewMethods } from "@gorhom/bottom-sheet";
 import { BookmarkIcon, BookmarkOutlineIcon, CreateARIcon, ChevronLeftIcon, ErrorOutlineIcon, ShareIcon } from "@components/icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Artifact } from "@models";
+import { Artifact, MultilingualText } from "@models";
 import { useAuth } from "@providers/auth_provider";
 import { useFeathers } from "@providers/feathers_provider";
 import _ from "lodash";
 import { useAppTheme } from "@providers/style_provider";
 import { Routes } from "./composable/routes";
+import { useLocalizedText } from "@/hooks/useLocalizedText";
 
 export default function DetailPage() {
   const { theme } = useAppTheme();
+  const localize = useLocalizedText();
   const feathers = useFeathers();
   const { top } = useSafeAreaInsets();
   const params = useLocalSearchParams<{ id?: string }>();
@@ -22,6 +24,15 @@ export default function DetailPage() {
   const [modelError, setModelError] = useState(null);
   const { user, updateUser } = useAuth();
   const [item, setItem] = useState<Artifact>();
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  const localizeText = useCallback(
+    (text: string | MultilingualText | undefined) => {
+      if (typeof text === "string" || text === undefined) return text;
+      return localize(text);
+    },
+    [localize]
+  );
 
   const bookmarksRef = useRef<string[]>(user?.bookmarks ?? []);
   const [isBookmarked, setIsBookmarked] = useState(bookmarksRef.current.includes(params.id || ""));
@@ -49,34 +60,45 @@ export default function DetailPage() {
 
   useEffect(() => {
     async function syncData() {
-      if (!params.id) return;
-      const res = await feathers.service("artifacts").get(params.id);
-      setItem(res);
+      if (!params.id) {
+        setDataLoaded(true);
+        return;
+      }
+      try {
+        const res = await feathers.service("artifacts").get(params.id);
+        setItem(res);
+      } catch (error) {
+        console.warn("Artifact detail fetch error:", error);
+      } finally {
+        setDataLoaded(true);
+      }
     }
     syncData();
   }, [params.id]);
 
   return (
     <MainBody backgroundColor={theme.colors.background} padding={{ right: 0, left: 0 }}>
-      <>
-        <View style={{ flex: 0.5, position: "relative" }}>
-          <ModelView style={{ flex: 1 }} setLoading={setLoading} setError={setModelError} />
-          {loading && <LoadingPage />}
-          {modelError && (
-            <View style={_style.centerContainer}>
-              <ErrorOutlineIcon fill="white" />
-            </View>
-          )}
-        </View>
-        <BottomSheet
-          ref={bottomSheetRef}
-          snapPoints={snapPoints}
-          backgroundStyle={[{ backgroundColor: theme.colors.container, marginHorizontal: theme.spacing.md }, _style.bottomSheetShadow]}
-        >
-          {item && (
+      {!dataLoaded ? (
+        <LoadingPage />
+      ) : item ? (
+        <>
+          <View style={{ flex: 0.5, position: "relative" }}>
+            <ModelView style={{ flex: 1 }} setLoading={setLoading} setError={setModelError} />
+            {loading && <LoadingPage />}
+            {modelError && (
+              <View style={_style.centerContainer}>
+                <ErrorOutlineIcon fill="white" />
+              </View>
+            )}
+          </View>
+          <BottomSheet
+            ref={bottomSheetRef}
+            snapPoints={snapPoints}
+            backgroundStyle={[{ backgroundColor: theme.colors.container, marginHorizontal: theme.spacing.md }, _style.bottomSheetShadow]}
+          >
             <View style={[_style.columnLayout, { flex: 0, marginTop: theme.spacing.md }]}>
               <Text variant="headlineSmall" style={{ marginBottom: theme.spacing.sm }}>
-                {item?.name}
+                {localizeText(item?.name)}
               </Text>
               <View style={_style.rowLayout}>
                 {
@@ -88,65 +110,67 @@ export default function DetailPage() {
 
               <AudioPlayer soundUri={require("@assets/audio/arrowhead.mp3")} />
             </View>
-          )}
 
-          <BottomSheetScrollView ref={bottomSheetScrollRef} showsVerticalScrollIndicator={false}>
-            <View
-              style={{
-                flex: 1,
-                overflow: "hidden",
-                flexDirection: "column",
-                paddingHorizontal: theme.spacing.xl,
-                paddingBottom: theme.spacing.xl,
-                gap: theme.spacing.lg,
-              }}
-            >
-              <>
-                {item?.desc
-                  ?.replace(/\\n/g, "\n")
-                  .split(/\r?\n/g)
-                  .map((desc, idx) => (
-                    <Text variant="bodyMedium" key={idx}>
-                      {desc}
-                    </Text>
-                  ))}
-              </>
+            <BottomSheetScrollView ref={bottomSheetScrollRef} showsVerticalScrollIndicator={false}>
+              <View
+                style={{
+                  flex: 1,
+                  overflow: "hidden",
+                  flexDirection: "column",
+                  paddingHorizontal: theme.spacing.xl,
+                  paddingBottom: theme.spacing.xl,
+                  gap: theme.spacing.lg,
+                }}
+              >
+                <>
+                  {localizeText(item?.desc)
+                    ?.replace(/\\n/g, "\n")
+                    .split(/\r?\n/g)
+                    .map((desc, idx) => (
+                      <Text variant="bodyMedium" key={idx}>
+                        {desc}
+                      </Text>
+                    ))}
+                </>
+              </View>
+            </BottomSheetScrollView>
+          </BottomSheet>
+          {/* Header */}
+          <View
+            style={[
+              _style.rowLayout,
+              {
+                justifyContent: "space-between",
+                position: "absolute",
+                top: top + theme.spacing.xs,
+                left: 0,
+                right: 0,
+                paddingHorizontal: theme.spacing.md,
+              },
+            ]}
+          >
+            <IconBtn icon={<ChevronLeftIcon fill={theme.colors.grey1} />} onPress={() => router.back()} disabled={loading} />
+            <View style={[_style.rowLayout, { gap: theme.spacing.sm }]}>
+              <IconBtn icon={<ShareIcon fill={theme.colors.grey1} />} onPress={() => {}} />
+              <IconBtn
+                icon={isBookmarked ? <BookmarkIcon fill={theme.colors.grey1} /> : <BookmarkOutlineIcon fill={theme.colors.grey1} />}
+                onPress={() => {
+                  setBookmark(item?._id);
+                }}
+              />
+              <IconBtn
+                icon={<CreateARIcon fill={theme.colors.grey1} />}
+                disabled={loading}
+                onPress={() => {
+                  loading ? null : router.push(Routes.ArPlacement);
+                }}
+              />
             </View>
-          </BottomSheetScrollView>
-        </BottomSheet>
-        {/* Header */}
-        <View
-          style={[
-            _style.rowLayout,
-            {
-              justifyContent: "space-between",
-              position: "absolute",
-              top: top + theme.spacing.xs,
-              left: 0,
-              right: 0,
-              paddingHorizontal: theme.spacing.md,
-            },
-          ]}
-        >
-          <IconBtn icon={<ChevronLeftIcon fill={theme.colors.grey1} />} onPress={() => router.back()} disabled={loading} />
-          <View style={[_style.rowLayout, { gap: theme.spacing.sm }]}>
-            <IconBtn icon={<ShareIcon fill={theme.colors.grey1} />} onPress={() => {}} />
-            <IconBtn
-              icon={isBookmarked ? <BookmarkIcon fill={theme.colors.grey1} /> : <BookmarkOutlineIcon fill={theme.colors.grey1} />}
-              onPress={() => {
-                setBookmark(item?._id);
-              }}
-            />
-            <IconBtn
-              icon={<CreateARIcon fill={theme.colors.grey1} />}
-              disabled={loading}
-              onPress={() => {
-                loading ? null : router.push(Routes.ArPlacement);
-              }}
-            />
           </View>
-        </View>
-      </>
+        </>
+      ) : (
+        <ErrorPage message="Details for this item aren't available" />
+      )}
     </MainBody>
   );
 }

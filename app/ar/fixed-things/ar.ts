@@ -105,10 +105,6 @@ function findTargetInrange<T extends { point: LatLng, name: string }>(data: T[],
   distance?: number,
 }, location?: LatLng) {
   const { use_hint = false, distance: d = 20 } = options;
-  if (__DEV__) {
-    // local test
-    return data.at(0);
-  }
   if (!location) {
     return null;
   }
@@ -118,7 +114,7 @@ function findTargetInrange<T extends { point: LatLng, name: string }>(data: T[],
     if (use_hint) {
       ToastAndroid.show(`To ${item.name} has ${distance}m`, ToastAndroid.SHORT)
     }
-    // in 10m, guide user to reconstruction;
+    // in 10m (default 20m), guide user to reconstruction;
     if (distance < d) {
       return item;
     }

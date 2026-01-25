@@ -113,7 +113,7 @@ export default function Page() {
           )}
         </ScrollView>
       ) : (
-        <ErrorPage />
+        <ErrorPage message="Details for this item aren't available" />
       )}
     </MainBody>
   );
