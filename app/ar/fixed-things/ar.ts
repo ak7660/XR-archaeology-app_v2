@@ -74,8 +74,8 @@ export const WALL_INFOS: {
   {
     id: 4,
     point: {
-      latitude: 22.284631161261558,
-      longitude: 114.13600909459755,
+      latitude: 22.283519182256978,
+      longitude: 114.13472046450494,
     },
     name: "Chi Wah Learning Common",
     briefDesc: "HKU Chi Wah Learning Common AR Test Point",
@@ -85,13 +85,24 @@ export const WALL_INFOS: {
   {
     id: 5,
     point: {
-      latitude: 22.284563327620024,
-      longitude: 114.13590364062306,
+      latitude: 22.283694,
+      longitude: 114.134131,
     },
     name: "Run Run Shaw Tower",
     briefDesc: "HKU Run Run Shaw Tower AR Test Point",
     model: require("@assets/models/wall/wall2.glb"),
     images: [require("@/assets/images/wall3.jpg")],
+  },
+  {
+    id: 6,
+    point: {
+      latitude: 33.64642009950128,
+      longitude: 72.9965425410109,
+    },
+    name: "test location",
+    briefDesc: "AR Test Location",
+    model: require("@assets/models/wall/wall1.glb"),
+    images: [require("@/assets/images/wall2.jpg")],
   },
 ] as const;
 

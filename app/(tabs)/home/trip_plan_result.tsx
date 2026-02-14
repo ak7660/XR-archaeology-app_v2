@@ -68,7 +68,16 @@ const TripPlanResultPage = observer(() => {
           </View>
         );
       }
-      // Bold metadata lines (**Key:** value)
+      // Bold time headers (**9:00 AM** or **12:00 PM**)
+      else if (trimmed.match(/^\*\*\d{1,2}:\d{2}\s*(AM|PM|am|pm)?\*\*$/)) {
+        const timeText = trimmed.replace(/^\*\*|\*\*$/g, '');
+        elements.push(
+          <Text key={`time-header-${key++}`} variant="labelLarge" style={[styles.timeText, { marginTop: theme.spacing.sm, marginBottom: theme.spacing.xs }]}>
+            🕐 {timeText}
+          </Text>
+        );
+      }
+      // Bold metadata lines (**Key:** value) - must have colon
       else if (trimmed.match(/^\*\*[^*]+:\*\*/)) {
         const parts = trimmed.split('**');
         elements.push(
@@ -87,41 +96,111 @@ const TripPlanResultPage = observer(() => {
           <Divider key={`hr-${key++}`} style={{ marginVertical: theme.spacing.md }} />
         );
       }
-      // Activity/schedule lines (time range at start)
+      // Activity/schedule lines (time range at start - legacy format)
       else if (trimmed.match(/^\d{2}:\d{2}/)) {
         const activity = parseActivityLine(trimmed);
-        elements.push(
-          <View key={`activity-${key++}`} style={styles.activityCard}>
-            <Text variant="labelLarge" style={styles.timeText}>
-              🕐 {activity.time}
-            </Text>
-            {activity.title && (
-              <Text variant="titleSmall" style={styles.activityTitle}>
-                {formatInlineText(activity.title)}
+        
+        // Check if the rest of the line after time is just a location link
+        const restOfLine = trimmed.substring(activity.time.length).trim();
+        const isOnlyLocationLink = /^\[.*?\]\(location:.*?\/.*?\)$/.test(restOfLine);
+        
+        if (isOnlyLocationLink) {
+          // Render time header + location card
+          const locationData = extractLocationLink(restOfLine);
+          elements.push(
+            <View key={`time-section-${key++}`} style={{ marginVertical: theme.spacing.xs }}>
+              <Text variant="labelLarge" style={[styles.timeText, { marginBottom: theme.spacing.xs }]}>
+                🕐 {activity.time}
               </Text>
-            )}
-            <Text variant="bodyMedium" style={styles.activityDescription}>
-              {formatInlineText(activity.description)}
-            </Text>
-            {activity.cost && (
-              <Chip icon="cash" compact style={styles.costChip}>
-                {activity.cost}
-              </Chip>
-            )}
-          </View>
-        );
+              {locationData && (
+                <LocationCard
+                  label={locationData.label}
+                  service={locationData.service}
+                  id={locationData.id}
+                  onPress={() => {
+                    try {
+                      const route = getDetailRoute(locationData.service, locationData.id);
+                      if (route) {
+                        router.push(route);
+                      } else {
+                        Alert.alert("Navigation Error", `Could not resolve route for ${locationData.service}/${locationData.id}`);
+                      }
+                    } catch (navError: any) {
+                      Alert.alert("Navigation Error", navError?.message || "Unknown error");
+                    }
+                  }}
+                />
+              )}
+            </View>
+          );
+        } else {
+          // Render as regular activity card with inline formatting
+          elements.push(
+            <View key={`activity-${key++}`} style={styles.activityCard}>
+              <Text variant="labelLarge" style={styles.timeText}>
+                🕐 {activity.time}
+              </Text>
+              {activity.title && (
+                <Text variant="titleSmall" style={styles.activityTitle}>
+                  {formatInlineText(activity.title)}
+                </Text>
+              )}
+              <Text variant="bodyMedium" style={styles.activityDescription}>
+                {formatInlineText(activity.description)}
+              </Text>
+              {activity.cost && (
+                <Chip icon="cash" compact style={styles.costChip}>
+                  {activity.cost}
+                </Chip>
+              )}
+            </View>
+          );
+        }
       }
       // Bullet points (lines starting with •, -, or indented)
       else if (trimmed.match(/^[•\-]/) || line.startsWith('  ')) {
         const content = trimmed.replace(/^[•\-]\s*/, '');
-        elements.push(
-          <View key={`bullet-${key++}`} style={styles.bulletPoint}>
-            <Text style={{ color: theme.colors.primary, marginRight: theme.spacing.xs }}>•</Text>
-            <Text variant="bodyMedium" style={{ flex: 1, color: theme.colors.text }}>
-              {formatInlineText(content)}
-            </Text>
-          </View>
-        );
+        
+        // Check if bullet point contains ONLY a location link
+        const isOnlyLocationLink = /^\[.*?\]\(location:.*?\/.*?\)$/.test(content);
+        
+        if (isOnlyLocationLink) {
+          // Render as LocationCard
+          const locationData = extractLocationLink(content);
+          if (locationData) {
+            elements.push(
+              <View key={`bullet-location-${key++}`} style={{ marginVertical: theme.spacing.xs }}>
+                <LocationCard
+                  label={locationData.label}
+                  service={locationData.service}
+                  id={locationData.id}
+                  onPress={() => {
+                    try {
+                      const route = getDetailRoute(locationData.service, locationData.id);
+                      if (route) {
+                        router.push(route);
+                      } else {
+                        Alert.alert("Navigation Error", `Could not resolve route for ${locationData.service}/${locationData.id}`);
+                      }
+                    } catch (navError: any) {
+                      Alert.alert("Navigation Error", navError?.message || "Unknown error");
+                    }
+                  }}
+                />
+              </View>
+            );
+          }
+        } else {
+          // Render as regular bullet point
+          elements.push(
+            <View key={`bullet-${key++}`} style={styles.bulletPoint}>
+              <Text style={{ color: theme.colors.primary, marginRight: theme.spacing.xs }}>•</Text>
+              <Text variant="bodyMedium" style={{ flex: 1, color: theme.colors.text }}>
+                {formatInlineText(content)}
+              </Text>
+            </View>
+          );
+        }
       }
       // Cost summary lines
       else if (trimmed.match(/\$\d+/) && !trimmed.startsWith('**')) {
@@ -350,6 +429,7 @@ const TripPlanResultPage = observer(() => {
       padding: theme.spacing.lg,
     },
     h1: {
+      fontSize: 24,
       color: theme.colors.primary,
       fontWeight: 'bold',
       marginBottom: theme.spacing.md,

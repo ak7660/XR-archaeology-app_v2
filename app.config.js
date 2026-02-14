@@ -7,7 +7,7 @@ module.exports = {
     scheme: "xrarchaeology",
     extra: {
       eas: {
-        projectId: "8363bd2f-804d-4936-a6e3-eeac53ce3e6b"
+        projectId: "75d7197d-e827-450a-ae61-5198a779132d"
       },
       // Explicitly pass environment variables to the app
       EXPO_PUBLIC_API_URL: process.env.EXPO_PUBLIC_API_URL,
