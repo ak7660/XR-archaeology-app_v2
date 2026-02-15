@@ -1,7 +1,7 @@
 import { AppBar, Carousel, ContentItem, ErrorPage, LoadingPage, MainBody, NAVBAR_HEIGHT } from "@/components";
 import { CompassIcon, FootStepsIcon, LocationIcon, MountainIcon, TimeOutlineIcon } from "@/components/icons";
 import MapPreview from "@/components/map/map_preview";
-import { Location, Route } from "@/models";
+import { Location, Route, ArReconstruction, Storyboard } from "@/models";
 import { distanceFromLatLonInKm } from "@/plugins/geolocation";
 import { getThumb } from "@/plugins/utils";
 import { Paginated, useFeathers } from "@/providers/feathers_provider";
@@ -10,8 +10,8 @@ import { AppTheme, useAppTheme } from "@/providers/style_provider";
 import { router, useLocalSearchParams } from "expo-router";
 import _ from "lodash";
 import { useEffect, useRef, useState } from "react";
-import { Alert, ImageBackground, ScrollView, StyleSheet, View, useWindowDimensions } from "react-native";
-import { Button, Text } from "react-native-paper";
+import { Alert, Image, ImageBackground, ScrollView, StyleSheet, View, useWindowDimensions } from "react-native";
+import { Button, Chip, Text } from "react-native-paper";
 import * as ExpoLocation from "expo-location";
 import { Routes } from "@/app/composable/routes";
 import { Tts } from "@/components/common/tts";
@@ -33,6 +33,8 @@ export default function Page() {
 
   const [distance, setDistance] = useState("");
   const [duration, setDuration] = useState("");
+  const [arReconstructions, setArReconstructions] = useState<ArReconstruction[]>([]);
+  const [storyboards, setStoryboards] = useState<Storyboard[]>([]);
 
   /** This is from google map */
   const avgKmPerHour = 4.5;
@@ -81,6 +83,27 @@ export default function Page() {
         setDuration(text);
         setPoints(locations);
         setRoute(res);
+
+        // Fetch AR reconstructions and storyboards for this route
+        try {
+          console.log("[Route Page] Fetching AR data for route id:", id);
+          const [arRes, sbRes] = await Promise.all([
+            feathers.service("arReconstructions").find({ query: { route: id, $sort: { order: 1 } } }).catch((err) => {
+              console.warn("[Route Page] arReconstructions fetch error:", err?.message || err);
+              return { data: [] };
+            }),
+            feathers.service("storyboards").find({ query: { route: id, $sort: { order: 1 } } }).catch((err) => {
+              console.warn("[Route Page] storyboards fetch error:", err?.message || err);
+              return { data: [] };
+            }),
+          ]);
+          console.log("[Route Page] AR reconstructions fetched:", arRes.data?.length ?? 0, arRes.data);
+          console.log("[Route Page] Storyboards fetched:", sbRes.data?.length ?? 0, sbRes.data);
+          setArReconstructions(arRes.data ?? []);
+          setStoryboards(sbRes.data ?? []);
+        } catch (e) {
+          console.warn("[Route Page] Failed to fetch AR data for route:", e);
+        }
       } catch (error) {
         console.warn(error);
       } finally {
@@ -93,7 +116,7 @@ export default function Page() {
   async function startARTour(index?: number) {
     index ??= 0;
     const ids = points.map(({ _id }) => _id);
-    const goTo = () => router.push({ pathname: Routes.ArExplore, params: { service: "locations", targetId: index, idString: JSON.stringify(ids) } });
+    const goTo = () => router.push({ pathname: Routes.ArExplore, params: { service: "locations", targetId: index, idString: JSON.stringify(ids), routeId: id } });
     try {
       const { coords: position } = await ExpoLocation.getCurrentPositionAsync();
       if (distanceFromLatLonInKm(position, points[index]) > 5) {
@@ -259,6 +282,61 @@ export default function Page() {
                 ))
               : null}
           </View>
+
+          {/* AR Points of Interest */}
+          {(arReconstructions.length > 0 || storyboards.length > 0) && (
+            <View style={{ flexDirection: "column", marginTop: theme.spacing.xl * 1.5, paddingHorizontal: theme.spacing.lg }}>
+              <Text variant="titleMedium" style={{ color: theme.colors.text, marginBottom: theme.spacing.md }}>
+                AR Points of Interest
+              </Text>
+
+              {arReconstructions.map((ar) => {
+                const thumbUri = ar.images?.[0] ? getThumb(ar.images[0]) : null;
+                return (
+                  <View key={ar._id} style={style.arCard}>
+                    {thumbUri && (
+                      <Image source={{ uri: thumbUri }} style={style.arCardImage} />
+                    )}
+                    <View style={{ flex: 1, paddingVertical: theme.spacing.xs }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.xs, marginBottom: 2 }}>
+                        <Chip compact textStyle={{ fontSize: 10 }} style={{ backgroundColor: theme.colors.primary + "22" }}>AR Wall</Chip>
+                      </View>
+                      <Text variant="titleSmall" style={{ color: theme.colors.text }} numberOfLines={2}>
+                        {ar.name}
+                      </Text>
+                      {ar.briefDesc ? (
+                        <Text variant="bodySmall" style={{ color: theme.colors.grey1, marginTop: 2 }} numberOfLines={2}>
+                          {ar.briefDesc}
+                        </Text>
+                      ) : null}
+                    </View>
+                  </View>
+                );
+              })}
+
+              {storyboards.map((sb) => {
+                const thumbUri = sb.images?.[0] ? getThumb(sb.images[0]) : null;
+                return (
+                  <View key={sb._id} style={style.arCard}>
+                    {thumbUri && (
+                      <Image source={{ uri: thumbUri }} style={style.arCardImage} />
+                    )}
+                    <View style={{ flex: 1, paddingVertical: theme.spacing.xs }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.xs, marginBottom: 2 }}>
+                        <Chip compact textStyle={{ fontSize: 10 }} style={{ backgroundColor: "#4CAF5022" }}>Storyboard</Chip>
+                      </View>
+                      <Text variant="titleSmall" style={{ color: theme.colors.text }} numberOfLines={2}>
+                        {sb.name}
+                      </Text>
+                      <Text variant="bodySmall" style={{ color: theme.colors.grey1, marginTop: 2 }}>
+                        {sb.pages?.length ?? 0} {(sb.pages?.length ?? 0) === 1 ? "page" : "pages"}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          )}
         </ScrollView>
       ) : (
         <ErrorPage message="Details for this item aren't available" />
@@ -294,5 +372,25 @@ const useStyle = ({ theme, screenWidth }: { theme: AppTheme; screenWidth: number
     buttonLabelStyle: {
       marginHorizontal: theme.spacing.md,
       marginVertical: theme.spacing.xs,
+    },
+    arCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      columnGap: theme.spacing.md,
+      backgroundColor: theme.colors.surface ?? "#fff",
+      borderRadius: theme.borderRadius.sm,
+      marginBottom: theme.spacing.sm,
+      padding: theme.spacing.sm,
+      elevation: 1,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    },
+    arCardImage: {
+      width: 72,
+      height: 72,
+      borderRadius: theme.borderRadius.xs,
+      resizeMode: "cover",
     },
   });

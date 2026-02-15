@@ -1,6 +1,80 @@
 import { distanceFromLatLonInKm } from "@/plugins/geolocation";
 import { ToastAndroid } from "react-native";
 import { LatLng } from "react-native-maps";
+import { getThumb } from "@/plugins/utils";
+import { ArReconstruction } from "@/models";
+import { Storyboard } from "@/models";
+
+// ============================================================
+// Types for backend-fetched data (with LatLng point computed)
+// ============================================================
+
+/** AR Reconstruction info coming from the backend, with computed `point` */
+export interface RemoteARInfo {
+  _id: string;
+  name: string;
+  briefDesc?: string;
+  latitude: number;
+  longitude: number;
+  point: LatLng;
+  model?: string;        // Attachment ID
+  images?: string[];     // Attachment IDs
+  reversed?: boolean;
+  route: string;
+  triggerDistance?: number;
+  order?: number;
+}
+
+/** Storyboard/Trench info coming from the backend, with computed `point` */
+export interface RemoteTrenchInfo {
+  _id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  point: LatLng;
+  images?: string[];     // Attachment IDs
+  pages: { text: string; imageIndex: number }[];
+  route: string;
+  triggerDistance?: number;
+  order?: number;
+}
+
+/** Convert backend ArReconstruction records to RemoteARInfo with computed `point` */
+export function toRemoteARInfos(records: ArReconstruction[]): RemoteARInfo[] {
+  return records.map(r => ({
+    ...r,
+    point: { latitude: r.latitude, longitude: r.longitude },
+  }));
+}
+
+/** Convert backend Storyboard records to RemoteTrenchInfo with computed `point` */
+export function toRemoteTrenchInfos(records: Storyboard[]): RemoteTrenchInfo[] {
+  return records.map(r => ({
+    ...r,
+    point: { latitude: r.latitude, longitude: r.longitude },
+  }));
+}
+
+/** Resolve an image value to an Image source prop. Handles both local require() numbers and remote Attachment ID strings. */
+export function resolveImageSource(image: string | number | undefined) {
+  if (image === undefined || image === null) return undefined;
+  if (typeof image === 'number') return image; // local require()
+  const uri = getThumb(image);
+  return uri ? { uri } : undefined;
+}
+
+/** Resolve a model value to a Viro3DObject source prop. Handles both local require() numbers and remote Attachment ID strings. */
+export function resolveModelSource(model: string | number | undefined) {
+  if (model === undefined || model === null) return undefined;
+  if (typeof model === 'number') return model; // local require()
+  // For remote models, serve the raw file (not the .jpg thumbnail)
+  const uri = `${process.env.EXPO_PUBLIC_API_URL}/api/attachments/${model}`;
+  return { uri };
+}
+
+// ============================================================
+// Legacy hardcoded types (kept for backward compatibility)
+// ============================================================
 
 export type ARInfo = (typeof WALL_INFOS)[number];
 export type TrenchInfo = (typeof TRENCH_INFOS)[number];
@@ -139,4 +213,36 @@ export function useTrenchGuide(location?: LatLng) {
 
 export function useARReconstruction(location?: LatLng) {
   return findTargetInrange(WALL_INFOS, { use_hint: false }, location);
+}
+
+// ============================================================
+// Generic proximity-check functions for backend-fetched data
+// ============================================================
+
+/** Check if user is near any RemoteARInfo. Uses per-record triggerDistance (default 20m). */
+export function checkARReconstruction(data: RemoteARInfo[], location?: LatLng) {
+  return findTargetInRangeWithTrigger(data, { use_hint: false }, location);
+}
+
+/** Check if user is near any RemoteTrenchInfo. Uses per-record triggerDistance (default 20m). */
+export function checkTrenchGuide(data: RemoteTrenchInfo[], location?: LatLng) {
+  return findTargetInRangeWithTrigger(data, { use_hint: true }, location);
+}
+
+/** Generic version that also respects per-item triggerDistance */
+export function findTargetInRangeWithTrigger<T extends { point: LatLng; name: string; triggerDistance?: number }>(
+  data: T[],
+  options: { use_hint?: boolean },
+  location?: LatLng
+): T | null {
+  if (!location) return null;
+  for (const item of data) {
+    const d = item.triggerDistance ?? 20;
+    const distance = distanceFromLatLonInKm(location, item.point) * 1000;
+    if (options.use_hint) {
+      ToastAndroid.show(`To ${item.name} has ${distance}m`, ToastAndroid.SHORT);
+    }
+    if (distance < d) return item;
+  }
+  return null;
 }

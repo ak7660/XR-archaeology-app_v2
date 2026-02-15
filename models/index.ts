@@ -1,4 +1,5 @@
 export { ArComment } from "./arComment";
+export { ArReconstruction } from "./arReconstruction";
 export { Artifact, File } from "./artifact";
 export { Tag } from "./tag";
 export { User } from "./user";
@@ -6,4 +7,6 @@ export { Location, Route, DifficultyLevel, GeoPoint } from "./location";
 export { Document } from "./document";
 export { Content } from "./utils";
 export { Attraction, OpenHour, AttractionType, Weekday, MultilingualText } from "./attraction";
+export { Storyboard } from "./storyboard";
+export type { StoryboardPage } from "./storyboard";
 export { Event } from "./event";

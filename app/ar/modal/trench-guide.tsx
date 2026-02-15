@@ -1,25 +1,32 @@
 import { Button, Text } from "react-native-paper";
-import { TrenchInfo } from "../fixed-things/ar";
+import { RemoteTrenchInfo, resolveImageSource } from "../fixed-things/ar";
 import { StyleSheet, View } from "react-native";
 import { AppTheme, useAppTheme } from "@/providers/style_provider";
 import { useMemo, useState } from "react";
 import { Image } from "react-native";
 import { Tts } from "@/components/common/tts";
 
-export function TrenchModalBody(props: { trench_info: TrenchInfo; close: () => void }) {
+export function TrenchModalBody(props: { trench_info: RemoteTrenchInfo; close: () => void }) {
   const { trench_info, close } = props;
   const { theme } = useAppTheme();
   const style = useStyle(theme);
   const [page, setPage] = useState(0);
   const min_page = 0;
-  const max_page = trench_info.text.length - 1;
+
+  // Support both backend pages[] format and legacy text[]/image[] format
+  const pages = trench_info.pages;
+  const max_page = pages.length - 1;
+
   const [agree, setAgree] = useState(false);
   const image_source = useMemo(() => {
-    return trench_info.image[page];
-  }, [page]);
+    const p = pages[page];
+    if (!p) return undefined;
+    const imgId = trench_info.images?.[p.imageIndex];
+    return resolveImageSource(imgId);
+  }, [page, pages, trench_info.images]);
   const text = useMemo(() => {
-    return trench_info.text[page];
-  }, [page]);
+    return pages[page]?.text ?? '';
+  }, [page, pages]);
 
   return (
     <View style={style.modalContainer}>

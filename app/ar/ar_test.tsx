@@ -24,17 +24,49 @@ import { useArModelStore } from "@/app/state/position";
 import { useAppStore } from "@/app/state/app";
 import { toJS } from "mobx";
 import { observer } from "mobx-react-lite";
-import { ARInfo, WALL_INFOS } from "./fixed-things/ar";
+import { ARInfo, WALL_INFOS, resolveModelSource } from "./fixed-things/ar";
 import { Image } from "react-native";
+import { useFeathers } from "@/providers/feathers_provider";
 
 const GuideScene = observer(() => {
   const [lastforward, setForward] = useState([0, 0, 0]);
   const ModelStore = useArModelStore();
-  const params = useLocalSearchParams<{ id?: "1" | "2" }>();
-  const wall = WALL_INFOS.find((wall) => wall.id === Number(params.id)) as ARInfo;
+  const feathers = useFeathers();
+  const params = useLocalSearchParams<{ id?: string }>();
 
-  // Safety check - if wall not found, return empty scene
-  if (!wall || !wall.model) {
+  // Try hardcoded first; if not found, fetch from backend
+  const hardcodedWall = WALL_INFOS.find((wall) => wall.id === Number(params.id)) as ARInfo | undefined;
+  const [remoteWall, setRemoteWall] = useState<any>(null);
+  const [wallLoading, setWallLoading] = useState(!hardcodedWall);
+
+  useEffect(() => {
+    if (hardcodedWall) return; // already have it
+    async function fetchWall() {
+      try {
+        const res = await feathers.service("arReconstructions").get(params.id!);
+        setRemoteWall(res);
+      } catch (err) {
+        console.warn("Failed to fetch AR reconstruction from backend:", err);
+      } finally {
+        setWallLoading(false);
+      }
+    }
+    if (params.id) fetchWall();
+    else setWallLoading(false);
+  }, [params.id]);
+
+  const wall = hardcodedWall ?? remoteWall;
+  const modelSource = wall ? resolveModelSource(wall.model) : undefined;
+
+  // Safety check - if wall not found or still loading, return empty scene
+  if (wallLoading) {
+    return (
+      <ViroARScene>
+        <ViroAmbientLight color="#ffffff" intensity={600} />
+      </ViroARScene>
+    );
+  }
+  if (!wall || !modelSource) {
     console.error("Wall not found or model missing for id:", params.id);
     return (
       <ViroARScene>
@@ -75,7 +107,7 @@ const GuideScene = observer(() => {
           </ViroNode>
         )}
         <Viro3DObject
-          source={wall.model}
+          source={modelSource}
           rotation={toJS(ModelStore.rotation)}
           position={toJS(ModelStore.position)}
           scale={[1, 1, 1]}

@@ -18,8 +18,8 @@ import { Viro3DPoint } from "@viro-community/react-viro/dist/components/Types/Vi
 import { useAuth } from "@/providers/auth_provider";
 import { ARLocationProvider, useARLocation } from "@/providers/ar_location_provider";
 import * as Vector from "@/plugins/vector";
-import { TrenchInfo, useARReconstruction, useTrenchGuide } from "./fixed-things/ar";
-import { ARInfo } from "./fixed-things/ar";
+import { TrenchInfo, useARReconstruction, useTrenchGuide, RemoteARInfo, RemoteTrenchInfo, toRemoteARInfos, toRemoteTrenchInfos, checkARReconstruction, checkTrenchGuide } from "./fixed-things/ar";
+import { ARInfo, WALL_INFOS, TRENCH_INFOS } from "./fixed-things/ar";
 import { Routes } from "../composable/routes";
 import { ReconstructionModalBody } from "./modal/reconstruction";
 import { useModal } from "./composable/modal";
@@ -76,7 +76,7 @@ function ARExplorePage() {
     return { height: withTiming(mapExpand ? screenHeight - MAP_HEIGHT : screenHeight, animatedProps) };
   });
 
-  const { targetId = "0", idString, service = "locations" } = useLocalSearchParams<{ targetId: string; idString: string; service: string }>();
+  const { targetId = "0", idString, service = "locations", routeId } = useLocalSearchParams<{ targetId: string; idString: string; service: string; routeId?: string }>();
 
   // geo locations and viro coordinates
   const [dataLoaded, setDataLoaded] = useState(false);
@@ -87,6 +87,54 @@ function ARExplorePage() {
   const [arrived, setArrived] = useState(false);
 
   const [nearestPoint, setNearestPoint] = useState<LatLng>();
+
+  // ---------- Backend-fetched AR data (with hardcoded fallback) ----------
+  const [wallInfos, setWallInfos] = useState<RemoteARInfo[]>([]);
+  const [trenchInfos, setTrenchInfos] = useState<RemoteTrenchInfo[]>([]);
+
+  useEffect(() => {
+    async function fetchARData() {
+      try {
+        if (!routeId) {
+          // No routeId — fall back to hardcoded data
+          setWallInfos(WALL_INFOS.map(w => ({ ...w, _id: String(w.id), latitude: w.point.latitude, longitude: w.point.longitude, point: w.point, route: '', triggerDistance: 20 })) as any);
+          setTrenchInfos(TRENCH_INFOS.map(t => ({ ...t, _id: String(t.id), latitude: t.point.latitude, longitude: t.point.longitude, point: t.point, route: '', pages: t.text.map((txt, i) => ({ text: txt, imageIndex: i })), triggerDistance: 20 })) as any);
+          return;
+        }
+        // Try fetching from backend
+        const [arRes, stRes] = await Promise.all([
+          feathers.service("arReconstructions").find({ query: { route: routeId, $sort: { order: 1 } } }).catch((err) => {
+            console.warn("[AR Explore] arReconstructions fetch error:", err?.message || err);
+            return { data: [] };
+          }),
+          feathers.service("storyboards").find({ query: { route: routeId, $sort: { order: 1 } } }).catch((err) => {
+            console.warn("[AR Explore] storyboards fetch error:", err?.message || err);
+            return { data: [] };
+          }),
+        ]);
+        const remoteWalls = toRemoteARInfos(arRes.data ?? []);
+        const remoteTrenches = toRemoteTrenchInfos(stRes.data ?? []);
+        console.log(`[AR Data] Fetched ${remoteWalls.length} AR reconstructions and ${remoteTrenches.length} storyboards for route ${routeId}`, { walls: remoteWalls, trenches: remoteTrenches });
+
+        // If backend returned data, use it; otherwise fall back to hardcoded
+        if (remoteWalls.length > 0) {
+          setWallInfos(remoteWalls);
+        } else {
+          setWallInfos(WALL_INFOS.map(w => ({ ...w, _id: String(w.id), latitude: w.point.latitude, longitude: w.point.longitude, point: w.point, route: routeId, triggerDistance: 20 })) as any);
+        }
+        if (remoteTrenches.length > 0) {
+          setTrenchInfos(remoteTrenches);
+        } else {
+          setTrenchInfos(TRENCH_INFOS.map(t => ({ ...t, _id: String(t.id), latitude: t.point.latitude, longitude: t.point.longitude, point: t.point, route: routeId, pages: t.text.map((txt, i) => ({ text: txt, imageIndex: i })), triggerDistance: 20 })) as any);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch AR data from backend, using hardcoded fallback", err);
+        setWallInfos(WALL_INFOS.map(w => ({ ...w, _id: String(w.id), latitude: w.point.latitude, longitude: w.point.longitude, point: w.point, route: '', triggerDistance: 20 })) as any);
+        setTrenchInfos(TRENCH_INFOS.map(t => ({ ...t, _id: String(t.id), latitude: t.point.latitude, longitude: t.point.longitude, point: t.point, route: '', pages: t.text.map((txt, i) => ({ text: txt, imageIndex: i })), triggerDistance: 20 })) as any);
+      }
+    }
+    fetchARData();
+  }, [routeId]);
 
   // Move calPoint and calTarget in main component in order to erase the computation burden in Viro
   const computePoint = (point: Viro3DPoint | undefined) => {
@@ -218,12 +266,21 @@ function ARExplorePage() {
   };
 
   const placeMarkers = useCallback(() => {
-    if (!points.length) return;
-    const markers = points.map((item, index) => {
-      return <Marker key={index} coordinate={{ longitude: item.longitude, latitude: item.latitude }} />;
+    const markers: React.JSX.Element[] = [];
+    // Route waypoints (default red)
+    points.forEach((item, index) => {
+      markers.push(<Marker key={`pt-${index}`} coordinate={{ longitude: item.longitude, latitude: item.latitude }} />);
+    });
+    // AR reconstruction points (blue)
+    wallInfos.forEach((item, index) => {
+      markers.push(<Marker key={`wall-${index}`} coordinate={item.point} pinColor="blue" title={item.name} />);
+    });
+    // Storyboard / trench points (green)
+    trenchInfos.forEach((item, index) => {
+      markers.push(<Marker key={`trench-${index}`} coordinate={item.point} pinColor="green" title={item.name} />);
     });
     return markers;
-  }, [points]);
+  }, [points, wallInfos, trenchInfos]);
 
   const computeBearingDiff = () => {
     // http://www.movable-type.co.uk/scripts/latlong.html?from=48.9613600,-122.0413400&to=48.965496,-122.072989
@@ -303,11 +360,12 @@ function ARExplorePage() {
   const { visible: reConModalVisible, setState: setReConModalVisible, reject: reconReject } = useModal()
   const { visible: trenchModalState, setState: setTrenchModalState, reject: trenchReject } = useModal()
   
-  const [trench_info, setTrenchInfo] = useState<TrenchInfo>();
-  const [ar_info, setArInfo] = useState<ARInfo>();
+  const [trench_info, setTrenchInfo] = useState<RemoteTrenchInfo>();
+  const [ar_info, setArInfo] = useState<RemoteARInfo>();
   useEffect(() => {
-    const trench_data = useTrenchGuide(location);
-    if (trench_data?.id !== trench_info?.id) {
+    if (trenchInfos.length === 0) return;
+    const trench_data = checkTrenchGuide(trenchInfos, location);
+    if (trench_data?._id !== trench_info?._id) {
       setTrenchModalState('hide');
     }
     if (trenchModalState === 'ended') {
@@ -317,10 +375,11 @@ function ARExplorePage() {
       setTrenchInfo(trench_data);
       setTrenchModalState('show');
     }
-  }, [location]);
+  }, [location, trenchInfos]);
   useEffect(() => {
-    const detected_ar_info = useARReconstruction(location);
-    if (detected_ar_info?.id !== ar_info?.id) {
+    if (wallInfos.length === 0) return;
+    const detected_ar_info = checkARReconstruction(wallInfos, location);
+    if (detected_ar_info?._id !== ar_info?._id) {
       setReConModalVisible('hide');
     }
     if (reConModalVisible === 'ended') {
@@ -330,7 +389,7 @@ function ARExplorePage() {
       setArInfo(detected_ar_info);
       setReConModalVisible('show');
     }
-  }, [location]);
+  }, [location, wallInfos]);
 
   const geoLoading: boolean = !(location && initHeading);
   const loading: boolean = geoLoading || !cameraReady || !dataLoaded;

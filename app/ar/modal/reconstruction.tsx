@@ -1,11 +1,11 @@
 import { Button, Text } from "react-native-paper";
-import { ARInfo } from "../fixed-things/ar";
+import { RemoteARInfo, resolveImageSource } from "../fixed-things/ar";
 import { Image, StyleSheet, View } from "react-native";
 import { useAppTheme } from "@/providers/style_provider";
 import { router } from "expo-router";
 import { Routes } from "@/app/composable/routes";
 
-export function ReconstructionModalBody(props: { ar_info: ARInfo; close: () => void }) {
+export function ReconstructionModalBody(props: { ar_info: RemoteARInfo; close: () => void }) {
   const { theme } = useAppTheme();
   const style = useStyle();
   const { ar_info, close } = props;
@@ -15,14 +15,16 @@ export function ReconstructionModalBody(props: { ar_info: ARInfo; close: () => v
   const gotoReconstructionGuide = () => {
     close();
     if (ar_info) {
-      router.replace({ pathname: Routes.ArGuide, params: { id: ar_info.id } });
+      router.replace({ pathname: Routes.ArGuide, params: { id: ar_info._id } });
     }
   };
+
+  const imageSource = ar_info?.images?.[0] != null ? resolveImageSource(ar_info.images[0]) : undefined;
 
   return (
     <View style={style.modalContainer}>
       <Text style={style.modalTitle}>{`You've reached AR view point:\n ${ar_info?.name}`}</Text>
-      {ar_info?.images?.[0] && <Image source={ar_info?.images?.[0]} style={style.modalImage} />}
+      {imageSource && <Image source={imageSource} style={style.modalImage} />}
       <Text style={style.modalText}>Do you want to try the reconstruction function with AR?</Text>
       <View style={style.buttonContainer}>
         <Button
