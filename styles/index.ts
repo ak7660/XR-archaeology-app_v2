@@ -13,7 +13,7 @@ export const customFonts = {
 };
 
 const _baseFontConfig = {
-  fontFamily: "Poppins",
+  fontFamily: "Poppins-Regular",
 } as const;
 
 const _baseFontVar = configureFonts({ config: _baseFontConfig });
@@ -23,17 +23,17 @@ const fontConfig = {
   // displayMedium: {},
   // displaySmall: {},
   // headlineLarge: {},
-  headlineMedium: { ..._baseFontVar.headlineMedium, fontSize: 32, fontWeight: "600" },
-  headlineSmall: { ..._baseFontVar.headlineSmall, fontSize: 24, fontWeight: "700" },
+  headlineMedium: { ..._baseFontVar.headlineMedium, fontFamily: "Poppins-SemiBold", fontSize: 32, fontWeight: "600" },
+  headlineSmall: { ..._baseFontVar.headlineSmall, fontFamily: "Poppins-Bold", fontSize: 24, fontWeight: "700" },
   // titleLarge: {},
-  titleMedium: { ..._baseFontVar.titleMedium, fontSize: 20, fontWeight: "700" },
-  titleSmall: { ..._baseFontVar.titleSmall, fontSize: 12 },
-  labelLarge: { ..._baseFontVar.titleMedium, fontSize: 16, fontWeight: "700" },
-  labelMedium: { ..._baseFontVar.labelMedium, fontSize: 14, fontWeight: "700" },
-  labelSmall: { ..._baseFontVar.labelSmall, fontSize: 12, fontWeight: "700" },
-  bodySmall: { ..._baseFontVar.bodySmall, fontSize: 12 },
-  bodyMedium: { ..._baseFontVar.bodyMedium, fontSize: 14 },
-  bodyLarge: { ..._baseFontVar.bodyLarge, fontSize: 16 },
+  titleMedium: { ..._baseFontVar.titleMedium, fontFamily: "Poppins-Bold", fontSize: 20, fontWeight: "700" },
+  titleSmall: { ..._baseFontVar.titleSmall, fontFamily: "Poppins-Regular", fontSize: 12 },
+  labelLarge: { ..._baseFontVar.titleMedium, fontFamily: "Poppins-Bold", fontSize: 16, fontWeight: "700" },
+  labelMedium: { ..._baseFontVar.labelMedium, fontFamily: "Poppins-Bold", fontSize: 14, fontWeight: "700" },
+  labelSmall: { ..._baseFontVar.labelSmall, fontFamily: "Poppins-Bold", fontSize: 12, fontWeight: "700" },
+  bodySmall: { ..._baseFontVar.bodySmall, fontFamily: "Poppins-Regular", fontSize: 12 },
+  bodyMedium: { ..._baseFontVar.bodyMedium, fontFamily: "Poppins-Regular", fontSize: 14 },
+  bodyLarge: { ..._baseFontVar.bodyLarge, fontFamily: "Poppins-Regular", fontSize: 16 },
 } as const;
 
 const fonts = configureFonts({
