@@ -226,7 +226,7 @@ export function checkARReconstruction(data: RemoteARInfo[], location?: LatLng) {
 
 /** Check if user is near any RemoteTrenchInfo. Uses per-record triggerDistance (default 20m). */
 export function checkTrenchGuide(data: RemoteTrenchInfo[], location?: LatLng) {
-  return findTargetInRangeWithTrigger(data, { use_hint: true }, location);
+  return findTargetInRangeWithTrigger(data, { use_hint: false }, location);
 }
 
 /** Generic version that also respects per-item triggerDistance */

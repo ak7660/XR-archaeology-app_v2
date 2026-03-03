@@ -18,8 +18,7 @@ import { Viro3DPoint } from "@viro-community/react-viro/dist/components/Types/Vi
 import { useAuth } from "@/providers/auth_provider";
 import { ARLocationProvider, useARLocation } from "@/providers/ar_location_provider";
 import * as Vector from "@/plugins/vector";
-import { TrenchInfo, useARReconstruction, useTrenchGuide, RemoteARInfo, RemoteTrenchInfo, toRemoteARInfos, toRemoteTrenchInfos, checkARReconstruction, checkTrenchGuide } from "./fixed-things/ar";
-import { ARInfo, WALL_INFOS, TRENCH_INFOS } from "./fixed-things/ar";
+import { RemoteARInfo, RemoteTrenchInfo, toRemoteARInfos, toRemoteTrenchInfos, checkARReconstruction, checkTrenchGuide } from "./fixed-things/ar";
 import { Routes } from "../composable/routes";
 import { ReconstructionModalBody } from "./modal/reconstruction";
 import { useModal } from "./composable/modal";
@@ -94,14 +93,13 @@ function ARExplorePage() {
 
   useEffect(() => {
     async function fetchARData() {
+      if (!routeId) {
+        // No route context — AR reconstruction/storyboard popups only apply to routes
+        setWallInfos([]);
+        setTrenchInfos([]);
+        return;
+      }
       try {
-        if (!routeId) {
-          // No routeId — fall back to hardcoded data
-          setWallInfos(WALL_INFOS.map(w => ({ ...w, _id: String(w.id), latitude: w.point.latitude, longitude: w.point.longitude, point: w.point, route: '', triggerDistance: 20 })) as any);
-          setTrenchInfos(TRENCH_INFOS.map(t => ({ ...t, _id: String(t.id), latitude: t.point.latitude, longitude: t.point.longitude, point: t.point, route: '', pages: t.text.map((txt, i) => ({ text: txt, imageIndex: i })), triggerDistance: 20 })) as any);
-          return;
-        }
-        // Try fetching from backend
         const [arRes, stRes] = await Promise.all([
           feathers.service("arReconstructions").find({ query: { route: routeId, $sort: { order: 1 } } }).catch((err) => {
             console.warn("[AR Explore] arReconstructions fetch error:", err?.message || err);
@@ -112,25 +110,12 @@ function ARExplorePage() {
             return { data: [] };
           }),
         ]);
-        const remoteWalls = toRemoteARInfos(arRes.data ?? []);
-        const remoteTrenches = toRemoteTrenchInfos(stRes.data ?? []);
-        console.log(`[AR Data] Fetched ${remoteWalls.length} AR reconstructions and ${remoteTrenches.length} storyboards for route ${routeId}`, { walls: remoteWalls, trenches: remoteTrenches });
-
-        // If backend returned data, use it; otherwise fall back to hardcoded
-        if (remoteWalls.length > 0) {
-          setWallInfos(remoteWalls);
-        } else {
-          setWallInfos(WALL_INFOS.map(w => ({ ...w, _id: String(w.id), latitude: w.point.latitude, longitude: w.point.longitude, point: w.point, route: routeId, triggerDistance: 20 })) as any);
-        }
-        if (remoteTrenches.length > 0) {
-          setTrenchInfos(remoteTrenches);
-        } else {
-          setTrenchInfos(TRENCH_INFOS.map(t => ({ ...t, _id: String(t.id), latitude: t.point.latitude, longitude: t.point.longitude, point: t.point, route: routeId, pages: t.text.map((txt, i) => ({ text: txt, imageIndex: i })), triggerDistance: 20 })) as any);
-        }
+        setWallInfos(toRemoteARInfos(arRes.data ?? []));
+        setTrenchInfos(toRemoteTrenchInfos(stRes.data ?? []));
       } catch (err) {
-        console.warn("Failed to fetch AR data from backend, using hardcoded fallback", err);
-        setWallInfos(WALL_INFOS.map(w => ({ ...w, _id: String(w.id), latitude: w.point.latitude, longitude: w.point.longitude, point: w.point, route: '', triggerDistance: 20 })) as any);
-        setTrenchInfos(TRENCH_INFOS.map(t => ({ ...t, _id: String(t.id), latitude: t.point.latitude, longitude: t.point.longitude, point: t.point, route: '', pages: t.text.map((txt, i) => ({ text: txt, imageIndex: i })), triggerDistance: 20 })) as any);
+        console.warn("[AR Explore] Failed to fetch AR data:", err);
+        setWallInfos([]);
+        setTrenchInfos([]);
       }
     }
     fetchARData();
@@ -187,31 +172,35 @@ function ARExplorePage() {
 
   const fetchComments = async () => {
     if (!location) return;
-    var total = 1;
-    const comments: ArComment[] = [];
-    while (total > comments.length) {
-      const range = latLongWithinRange(location, COMMENT_FETCH_RADIUS);
+    try {
+      var total = 1;
+      const comments: ArComment[] = [];
+      while (total > comments.length) {
+        const range = latLongWithinRange(location, COMMENT_FETCH_RADIUS);
 
-      const results: Paginated<ArComment> = await feathers.service("arComments").find({
-        query: {
-          $populate: ["user"],
-          $skip: comments.length,
-          latitude: {
-            $lte: range.maxLatitude,
-            $gte: range.minLatitude,
+        const results: Paginated<ArComment> = await feathers.service("arComments").find({
+          query: {
+            $populate: ["user"],
+            $skip: comments.length,
+            latitude: {
+              $lte: range.maxLatitude,
+              $gte: range.minLatitude,
+            },
+            longitude: {
+              $lte: range.maxLongitude,
+              $gte: range.minLongitude,
+            },
           },
-          longitude: {
-            $lte: range.maxLongitude,
-            $gte: range.minLongitude,
-          },
-        },
-      });
-      if (total != results.total) total = results.total;
-      if (results.total === 0 || results.data.length === 0) break;
-      comments.push(...results.data);
+        });
+        if (total != results.total) total = results.total;
+        if (results.total === 0 || results.data.length === 0) break;
+        comments.push(...results.data);
+      }
+
+      setComments(comments);
+    } catch (err) {
+      console.warn("[AR Explore] Failed to fetch comments:", err?.message || err);
     }
-
-    setComments(comments);
   };
 
   useEffect(() => {
@@ -224,7 +213,7 @@ function ARExplorePage() {
 
   // init heading and location are required in mapping comments' positions
   useEffect(() => {
-    if (!!!initHeading || !location) return;
+    if (initHeading === undefined || !location) return;
     if (!preLocation.current || distanceFromLatLonInKm(preLocation.current, location) > COMMENT_FETCH_RADIUS) {
       fetchComments();
       preLocation.current = location;
@@ -357,41 +346,43 @@ function ARExplorePage() {
   const degree = useMemo(computeBearingDiff, [location, nearestPoint, heading, initHeading]);
   const distanceText = useMemo(getNearestDistance, [location, points, targetIndex]);
 
-  const { visible: reConModalVisible, setState: setReConModalVisible, reject: reconReject } = useModal()
-  const { visible: trenchModalState, setState: setTrenchModalState, reject: trenchReject } = useModal()
-  
-  const [trench_info, setTrenchInfo] = useState<RemoteTrenchInfo>();
-  const [ar_info, setArInfo] = useState<RemoteARInfo>();
+  const reconModal = useModal();
+  const trenchModal = useModal();
+
+  const [trench_info, setTrenchInfo] = useState<RemoteTrenchInfo | null>(null);
+  const [ar_info, setArInfo] = useState<RemoteARInfo | null>(null);
+
+  // Proximity check for storyboard/trench guide popups
   useEffect(() => {
-    if (trenchInfos.length === 0) return;
-    const trench_data = checkTrenchGuide(trenchInfos, location);
-    if (trench_data?._id !== trench_info?._id) {
-      setTrenchModalState('hide');
-    }
-    if (trenchModalState === 'ended') {
-      return;
-    }
-    if (trench_data && trenchModalState !== 'show') {
-      setTrenchInfo(trench_data);
-      setTrenchModalState('show');
-    }
+    if (trenchInfos.length === 0 || !location) return;
+    // Don't run checks while a modal is already visible
+    if (trenchModal.visible) return;
+
+    const detected = checkTrenchGuide(trenchInfos, location);
+    if (!detected) return;
+    // Don't re-show a previously dismissed point
+    if (trenchModal.isDismissed(detected._id)) return;
+
+    setTrenchInfo(detected);
+    trenchModal.show();
   }, [location, trenchInfos]);
+
+  // Proximity check for AR reconstruction popups
   useEffect(() => {
-    if (wallInfos.length === 0) return;
-    const detected_ar_info = checkARReconstruction(wallInfos, location);
-    if (detected_ar_info?._id !== ar_info?._id) {
-      setReConModalVisible('hide');
-    }
-    if (reConModalVisible === 'ended') {
-      return;
-    }
-    if (detected_ar_info && reConModalVisible !== 'show') {
-      setArInfo(detected_ar_info);
-      setReConModalVisible('show');
-    }
+    if (wallInfos.length === 0 || !location) return;
+    // Don't run checks while a modal is already visible
+    if (reconModal.visible) return;
+
+    const detected = checkARReconstruction(wallInfos, location);
+    if (!detected) return;
+    // Don't re-show a previously dismissed point
+    if (reconModal.isDismissed(detected._id)) return;
+
+    setArInfo(detected);
+    reconModal.show();
   }, [location, wallInfos]);
 
-  const geoLoading: boolean = !(location && initHeading);
+  const geoLoading: boolean = !(location && initHeading !== undefined);
   const loading: boolean = geoLoading || !cameraReady || !dataLoaded;
 
   return (
@@ -561,11 +552,11 @@ function ARExplorePage() {
           )}
         </>
       )}
-      <Modal animationType="slide" transparent={false} visible={reConModalVisible === 'show'}>
-        { ar_info && <ReconstructionModalBody ar_info={ar_info} close={reconReject}></ReconstructionModalBody>}
+      <Modal animationType="slide" transparent={false} visible={reconModal.visible}>
+        {ar_info && <ReconstructionModalBody ar_info={ar_info} close={() => reconModal.dismiss(ar_info._id)} />}
       </Modal>
-      <Modal animationType="slide" transparent={false} visible={trenchModalState === 'show'}>
-        { trench_info && <TrenchModalBody trench_info={trench_info} close={trenchReject}></TrenchModalBody>}
+      <Modal animationType="slide" transparent={false} visible={trenchModal.visible}>
+        {trench_info && <TrenchModalBody trench_info={trench_info} close={() => trenchModal.dismiss(trench_info._id)} />}
       </Modal>
     </MainBody>
   );

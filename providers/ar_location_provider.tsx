@@ -26,7 +26,7 @@ const ARLocationStore = createContext<ARLocationContext | null>(null);
 const DISTANCE_INTERVAL = 20;
 //  Theoretical the best value is 2.5. optimal value is 5. 10 is for area with tall-buildings around.
 //  around 20 is for indoor
-const GPS_ERROR_MARGIN = 5;
+const GPS_ERROR_MARGIN = 8;
 const TIME_INTERVAL = 1 * 1000;
 export function ARLocationProvider({ children }: Props) {
   const [cameraReady, setCameraReady] = useState(true);
@@ -46,15 +46,31 @@ export function ARLocationProvider({ children }: Props) {
   const lastUpdateTimeStamp = useRef<Date>(new Date());
   /** Init environment */
   useEffect(() => {
-    const headingAccuracyThreshold = 3;
+    // On Android heading.accuracy is an enum: 0=unreliable, 1=low, 2=medium, 3=high.
+    const headingAccuracyThreshold = 1;
+    // Time (ms) to wait for a good heading before accepting whatever is available
+    const headingTimeoutMs = 15 * 1000;
 
     var locationInit: boolean = false;
     var headingInit: boolean = false;
     var waited: boolean = false;
+    var bestHeading: number | null = null;
+    var bestHeadingAccuracy: number = -1;
 
     let headingListener: Location.LocationSubscription | undefined;
     let locationListener: Location.LocationSubscription | undefined;
     var timer: NodeJS.Timeout;
+    var headingTimeout: NodeJS.Timeout;
+
+    const acceptHeading = (trueHeading: number, reason: string) => {
+      if (headingInit) return;
+      console.log(`[AR Location] Heading accepted (${reason}):`, trueHeading);
+      setInitHeading(trueHeading);
+      headingInit = true;
+      if (waited) {
+        setCameraReady(false);
+      }
+    };
 
     const displayAlert = async () => {
       timer = setInterval(() => {
@@ -77,18 +93,31 @@ export function ARLocationProvider({ children }: Props) {
         // distanceInterval: DISTANCE_INTERVAL,
       };
 
+      // Fallback: accept whatever heading we have after timeout
+      headingTimeout = setTimeout(() => {
+        if (!headingInit) {
+          if (bestHeading !== null) {
+            acceptHeading(bestHeading, `timeout after ${headingTimeoutMs / 1000}s, accuracy=${bestHeadingAccuracy}`);
+          } else {
+            // No heading data at all — accept 0 as fallback so the user isn't stuck forever
+            console.warn("[AR Location] No heading data received at all — using 0 as fallback");
+            acceptHeading(0, "no heading data fallback");
+          }
+        }
+      }, headingTimeoutMs);
+
       headingListener = await Location.watchHeadingAsync((heading) => {
         const { trueHeading } = heading;
         if (trueHeading < 0) return;
         setHeadingAccuracy(heading.accuracy);
+        console.log("[AR Heading] accuracy:", heading.accuracy, "trueHeading:", trueHeading);
+        // Track the best heading for timeout fallback
+        bestHeading = trueHeading;
+        if (heading.accuracy > bestHeadingAccuracy) {
+          bestHeadingAccuracy = heading.accuracy;
+        }
         if (heading.accuracy >= headingAccuracyThreshold) {
-          if (!headingInit) {
-            setInitHeading(trueHeading);
-            headingInit = true;
-            if (waited) {
-              setCameraReady(false);
-            }
-          }
+          acceptHeading(trueHeading, `accuracy=${heading.accuracy} >= threshold=${headingAccuracyThreshold}`);
         }
         if (headingInit) {
           const smoothHeading = Math.round(headingFilter.current.next(trueHeading));
@@ -140,11 +169,12 @@ export function ARLocationProvider({ children }: Props) {
       locationListener?.remove();
       headingListener?.remove();
       timer && clearInterval(timer);
+      headingTimeout && clearTimeout(headingTimeout);
     };
   }, []);
 
   useEffect(() => {
-    if (!(initHeading && location) || cameraReady) return;
+    if (initHeading === undefined || !location || cameraReady) return;
     // End animate after 10 sec
     var timer = setTimeout(() => {
       if (!cameraReady) {

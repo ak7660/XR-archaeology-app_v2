@@ -58,6 +58,14 @@ const GuideScene = observer(() => {
   const wall = hardcodedWall ?? remoteWall;
   const modelSource = wall ? resolveModelSource(wall.model) : undefined;
 
+  // This useEffect must be before any early returns to preserve hook order
+  useEffect(() => {
+    if (ModelStore.stage !== "unlock") {
+      const [x, y, z] = lastforward;
+      ModelStore.setModelPosition([x * ModelStore.distance + 20, y * ModelStore.distance - 20, z * ModelStore.distance]);
+    }
+  }, [ModelStore.radio]);
+
   // Safety check - if wall not found or still loading, return empty scene
   if (wallLoading) {
     return (
@@ -74,13 +82,6 @@ const GuideScene = observer(() => {
       </ViroARScene>
     );
   }
-
-  useEffect(() => {
-    if (ModelStore.stage !== "unlock") {
-      const [x, y, z] = lastforward;
-      ModelStore.setModelPosition([x * ModelStore.distance + 20, y * ModelStore.distance - 20, z * ModelStore.distance]);
-    }
-  }, [ModelStore.radio]);
 
   const updateCameraPosition = (cameraTransform: ViroCameraTransform) => {
     if (ModelStore.stage !== "unlock") {
