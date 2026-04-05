@@ -137,6 +137,9 @@ export const en = {
     save: "Save",
     updated: "Profile Updated",
     areaCode: "Area code",
+    helpFeedbackDescription: "Need help or want to share feedback? Please complete the user evaluation form.",
+    userEvaluation: "User Evaluation",
+    userEvaluationHint: "The form is embedded below.",
   },
 
   // Language settings

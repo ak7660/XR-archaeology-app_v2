@@ -50,7 +50,7 @@ export default function SettingsPage() {
         <View style={{ padding: theme.spacing.lg, gap: theme.spacing.md }}>
           {authenticated && <AccountListItem label={t("profile.profile")} prefix="profile" onPress={() => router.push(Routes.Profile)} />}
           <AccountListItem label={t("profile.settings")} prefix="setting" onPress={() => router.push(Routes.Settings)} />
-          <AccountListItem label={t("profile.helpAndFeedback")} prefix="help" />
+          <AccountListItem label={t("profile.helpAndFeedback")} prefix="help" onPress={() => router.push(Routes.HelpFeedback)} />
           <AccountListItem label={t("language.title")} prefix="language" onPress={() => router.push(Routes.Language)} />
         </View>
         <View style={{ padding: theme.spacing.lg }}>

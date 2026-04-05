@@ -140,6 +140,9 @@ export const ru: Translations = {
     save: "Сохранить",
     updated: "Профиль обновлён",
     areaCode: "Код страны",
+    helpFeedbackDescription: "Нужна помощь или хотите оставить отзыв? Заполните форму пользовательской оценки.",
+    userEvaluation: "Оценка пользователя",
+    userEvaluationHint: "Форма встроена ниже.",
   },
 
   // Language settings

@@ -138,6 +138,9 @@ export const hy: Translations = {
     save: "Պահպանել",
     updated: "Պրոֆիլը թարմացված է",
     areaCode: "Կոդ",
+    helpFeedbackDescription: "Օգնության կամ կարծիք հայտնելու համար լրացրեք օգտվողի գնահատման ձևը։",
+    userEvaluation: "Օգտվողի գնահատում",
+    userEvaluationHint: "Ձևը ներդրված է ստորև։",
   },
 
   // Language settings
