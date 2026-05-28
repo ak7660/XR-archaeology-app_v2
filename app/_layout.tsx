@@ -11,6 +11,7 @@ import { StyleProvider, useAppTheme } from "@providers/style_provider";
 import { LanguageProvider } from "@providers/language_provider";
 import { useAppStore } from '@/app/state/app';
 import { observer } from "mobx-react-lite";
+import { PreTestQuestionnaireModal } from "@/components";
 
 export default function RootLayout() {
   const [loadedFont, error] = useFonts(customFonts);
@@ -54,6 +55,7 @@ const StackLayout = observer(() => {
         <Stack.Screen name="ar/ar_explore" />
         <Stack.Screen name="collection" />
       </Stack>
+      <PreTestQuestionnaireModal />
       <StatusBar hidden={store.bar_status === 'hidden'} style={style === "dark" ? "light" : "dark"} />
     </>
   );

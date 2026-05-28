@@ -20,6 +20,7 @@ export { default as ARExploreScene } from "./explore/ar_scene";
 export { default as CommentDialog } from "./explore/comment_dialog";
 export { default as HeadingIndicator } from "./explore/heading_indicator";
 export { default as LocationCard } from "./trip-plan/location_card";
+export { default as PreTestQuestionnaireModal } from "./pre_test_questionnaire_modal";
 
 import * as Icons from "./icons";
 export { Icons };

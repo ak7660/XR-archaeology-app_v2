@@ -1,12 +1,15 @@
 import { AppBar, EventItem, LoadingPage, MainBody, NAVBAR_HEIGHT } from "@/components";
+import { SortIcon } from "@/components/icons";
 import { Event } from "@/models";
 import { Paginated, useFeathers } from "@/providers/feathers_provider";
 import { useAppTheme, AppTheme } from "@/providers/style_provider";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FlatList, ScrollView, StyleSheet, View } from "react-native";
+import { FlatList, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Calendar, CalendarUtils, DateData } from "react-native-calendars";
 import { MarkedDates } from "react-native-calendars/src/types";
 import { ActivityIndicator, Button, Text } from "react-native-paper";
+import { useLocation } from "@/hooks/useLocation";
+import { calculateDistance } from "@/plugins/utils";
 
 function getDateBorder(date: Date, type: 'end' | 'start') {
   if (type === 'end') {
@@ -42,6 +45,8 @@ export default function Page() {
   const style = useStyle({ theme });
   const [loaded, setLoaded] = useState(false);
   const [events, setEvents] = useState<Event[]>([]);
+  const [isSorted, setIsSorted] = useState(false);
+  const { location: userLocation } = useLocation();
 
   const initDate = CalendarUtils.getCalendarDateString(new Date());
   const minDate = initDate;
@@ -72,15 +77,35 @@ export default function Page() {
   }, [selectedDate, events]);
 
   const shown_events =  useMemo(() => {
-    if (!selectedDate) return events;
-    const target_events = events.find(evt => {
-      const selected_ts = new Date(selectedDate).getTime();
-      const start = getDateBorder(new Date(evt.startDate), 'start')
-      const end = getDateBorder(new Date(evt.endDate), 'end')
-      return selected_ts >= start.getTime() && selected_ts <= end.getTime();
-    });
-    return target_events ? [target_events] : [];
-  }, [selectedDate])
+    let filtered = events;
+    if (selectedDate) {
+      filtered = events.filter(evt => {
+        const selected_ts = new Date(selectedDate).getTime();
+        const start = getDateBorder(new Date(evt.startDate), 'start')
+        const end = getDateBorder(new Date(evt.endDate), 'end')
+        return selected_ts >= start.getTime() && selected_ts <= end.getTime();
+      });
+    }
+
+    if (isSorted && userLocation) {
+      filtered = [...filtered].sort((a, b) => {
+        // Extract coordinates from event or its venue attraction
+        const aLat = a.latitude || (typeof a.venue !== "string" && a.venue?.latitude);
+        const aLon = a.longitude || (typeof a.venue !== "string" && a.venue?.longitude);
+        const bLat = b.latitude || (typeof b.venue !== "string" && b.venue?.latitude);
+        const bLon = b.longitude || (typeof b.venue !== "string" && b.venue?.longitude);
+
+        if (!aLat || !aLon) return 1;
+        if (!bLat || !bLon) return -1;
+
+        const distA = calculateDistance(userLocation.latitude, userLocation.longitude, aLat as number, aLon as number);
+        const distB = calculateDistance(userLocation.latitude, userLocation.longitude, bLat as number, bLon as number);
+        return distA - distB;
+      });
+    }
+
+    return filtered;
+  }, [selectedDate, events, isSorted, userLocation])
 
   const onDayPress = useCallback((day: DateData) => {
     setSelectedDate(day.dateString);
@@ -105,7 +130,7 @@ export default function Page() {
     <MainBody padding={{ top: 0 }}>
       <AppBar showBack title="What's Hot!" />
       <View style={style.calendarContainer}>
-        <View style={{ flexDirection: "row", justifyContent: "flex-end" }}>
+        <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", gap: theme.spacing.sm }}>
           <Button
             buttonColor="transparent"
             mode="outlined"
@@ -117,6 +142,18 @@ export default function Page() {
               Reset selected day
             </Text>
           </Button>
+          <TouchableOpacity 
+            onPress={() => setIsSorted(!isSorted)}
+            style={{ 
+              backgroundColor: isSorted ? theme.colors.primary : theme.colors.surface, 
+              padding: 10, 
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: theme.colors.outline
+            }}
+          >
+            <SortIcon fill={isSorted ? theme.colors.onPrimary : theme.colors.onSurface} strokeWidth={2} />
+          </TouchableOpacity>
         </View>
         <Calendar
           enableSwipeMonths

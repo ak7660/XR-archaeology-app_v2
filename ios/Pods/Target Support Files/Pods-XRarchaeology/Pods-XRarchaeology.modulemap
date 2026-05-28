@@ -1,0 +1,6 @@
+module Pods_XRarchaeology {
+  umbrella header "Pods-XRarchaeology-umbrella.h"
+
+  export *
+  module * { export * }
+}

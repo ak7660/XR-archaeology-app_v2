@@ -1,5 +1,5 @@
 import { LoadingPage, MainBody } from "@components";
-import { Redirect, useRootNavigation, router } from "expo-router";
+import { Redirect, useRootNavigation } from "expo-router";
 import { useEffect, useState } from "react";
 import * as Location from "expo-location";
 import { Alert, Linking, Platform } from "react-native";
@@ -18,12 +18,6 @@ export default function App() {
       unsubscribe && unsubscribe();
     };
   }, [rootNav]);
-
-  useEffect(() => {
-    if (!isNavReady) return;
-
-    router.replace(Routes.Home);
-  }, [isNavReady]);
 
   useEffect(() => {
     (async () => {

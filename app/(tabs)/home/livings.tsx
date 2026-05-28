@@ -1,5 +1,6 @@
 import { Routes } from "@/app/composable/routes";
 import { AppBar, ListItem, ListItemProps, MainBody, NAVBAR_HEIGHT } from "@/components";
+import { SortIcon } from "@/components/icons";
 import { Attraction, OpenHour, Weekday } from "@/models";
 import { Paginated, useFeathers } from "@/providers/feathers_provider";
 import { AppTheme, useAppTheme } from "@/providers/style_provider";
@@ -9,9 +10,11 @@ import { Link, useLocalSearchParams } from "expo-router";
 import _ from "lodash";
 import moment from "moment";
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from "react-native";
+import { Pressable, ScrollView, StyleSheet, TouchableOpacity, View, useWindowDimensions } from "react-native";
 import { Text } from "react-native-paper";
 import { TabView, SceneMap } from "react-native-tab-view";
+import { useLocation } from "@/hooks/useLocation";
+import { calculateDistance } from "@/plugins/utils";
 
 interface BusinessHour {
   openTime: Date;
@@ -33,8 +36,25 @@ export default function Page() {
   const [tabIndex, setTabIndex] = useState(tabRoutes.findIndex(tab => tab.key === params?.type) ?? 0);
 
   const [items, setItems] = useState<Attraction[]>([]);
-  const restaurants = useMemo(() => items.filter((it) => it.type === "Restaurant"), [items]);
-  const lodgings = useMemo(() => items.filter((it) => it.type === "Lodging"), [items]);
+  const [isSorted, setIsSorted] = useState(false);
+  const { location: userLocation } = useLocation();
+
+  const sortedItems = useMemo(() => {
+    let filtered = items.slice();
+    if (isSorted && userLocation) {
+      filtered.sort((a, b) => {
+        if (!a.latitude || !a.longitude) return 1;
+        if (!b.latitude || !b.longitude) return -1;
+        const distA = calculateDistance(userLocation.latitude, userLocation.longitude, a.latitude, a.longitude);
+        const distB = calculateDistance(userLocation.latitude, userLocation.longitude, b.latitude, b.longitude);
+        return distA - distB;
+      });
+    }
+    return filtered;
+  }, [items, isSorted, userLocation]);
+
+  const restaurants = useMemo(() => sortedItems.filter((it) => it.type === "Restaurant"), [sortedItems]);
+  const lodgings = useMemo(() => sortedItems.filter((it) => it.type === "Lodging"), [sortedItems]);
 
   useEffect(() => {
     async function init() {
@@ -108,9 +128,19 @@ export default function Page() {
     return (
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: NAVBAR_HEIGHT + theme.spacing.md }}>
         <View style={style.sectionHeader}>
-          <Text variant="titleMedium" style={style.title}>
-            {''}
-          </Text>
+          <TouchableOpacity 
+            onPress={() => setIsSorted(!isSorted)}
+            style={{ 
+              backgroundColor: isSorted ? theme.colors.primary : theme.colors.surface, 
+              padding: 8, 
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: theme.colors.outline,
+              marginTop: 4
+            }}
+          >
+            <SortIcon fill={isSorted ? theme.colors.onPrimary : theme.colors.onSurface} size={20} />
+          </TouchableOpacity>
           <Link href={{ pathname: Routes.Attractions, params: { type: "Restaurant" } }} asChild>
             <Pressable style={style.button}>
               <Text variant="labelMedium" style={{ color: theme.colors.grey3 }}>
@@ -125,12 +155,16 @@ export default function Page() {
               const openHour = getOpenHoursText(item.businessHours);
               const localizedBrief = localize(item.briefDesc);
               const brief = localizedBrief ? `${localizedBrief}\n${openHour ?? ""}` : openHour;
+              
+              // Debug logging for coordinates
+              // console.log(`Item: ${item.name.en}, Lat: ${item.latitude}, Lon: ${item.longitude}`);
+
               const props: ListItemProps = {
                 name: item.name,
                 briefDesc: brief,
                 showNavigate: true,
                 latitude: item.latitude,
-                longitude: item.latitude,
+                longitude: item.longitude,
                 images: item.thumbnails,
                 href: { pathname: Routes.Detail, params: { id: item._id, service: "attractions" } },
               };
@@ -146,9 +180,19 @@ export default function Page() {
     return (
       <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: NAVBAR_HEIGHT + theme.spacing.md }}>
         <View style={style.sectionHeader}>
-          <Text variant="titleMedium" style={style.title}>
-            {''}
-          </Text>
+          <TouchableOpacity 
+            onPress={() => setIsSorted(!isSorted)}
+            style={{ 
+              backgroundColor: isSorted ? theme.colors.primary : theme.colors.surface, 
+              padding: 8, 
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: theme.colors.outline,
+              marginTop: 4
+            }}
+          >
+            <SortIcon fill={isSorted ? theme.colors.onPrimary : theme.colors.onSurface} size={20} />
+          </TouchableOpacity>
           <Link href={{ pathname: Routes.Attractions, params: { type: "Lodging" } }} asChild>
             <Pressable style={style.button}>
               <Text variant="labelMedium" style={{ color: theme.colors.grey3 }}>
@@ -160,12 +204,15 @@ export default function Page() {
         {lodgings && (
           <View style={style.list}>
             {lodgings.map((item) => {
+              // Debug logging for coordinates
+              // console.log(`Item: ${item.name.en}, Lat: ${item.latitude}, Lon: ${item.longitude}`);
+              
               const props: ListItemProps = {
                 name: item.name,
                 briefDesc: item.briefDesc,
                 showNavigate: true,
                 latitude: item.latitude,
-                longitude: item.latitude,
+                longitude: item.longitude,
                 images: item.thumbnails,
                 href: { pathname: Routes.Detail, params: { id: item._id, service: "attractions" } },
               };

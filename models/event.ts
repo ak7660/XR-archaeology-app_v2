@@ -12,5 +12,7 @@ export class Event extends Model {
   endDate: Date;
 
   order: number;
+  latitude?: number;
+  longitude?: number;
   createdAt: Date;
 }

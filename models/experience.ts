@@ -15,6 +15,8 @@ export class ExperienceItem extends Model {
   addressLink: string;
   duration: string;
   order: number;
+  latitude?: number;
+  longitude?: number;
   businessHours: {
     openTime: string;
     closeTime: string;

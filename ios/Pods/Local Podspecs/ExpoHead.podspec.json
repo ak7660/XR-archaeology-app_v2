@@ -1,0 +1,26 @@
+{
+  "name": "ExpoHead",
+  "version": "0.0.20",
+  "summary": "static page definitions for universal SEO",
+  "description": "static page definitions for universal SEO",
+  "license": "MIT",
+  "authors": "evanbacon <bacon@expo.io> (https://github.com/EvanBacon)",
+  "homepage": "https://github.com/expo/router#readme",
+  "platforms": {
+    "ios": "13.0"
+  },
+  "swift_versions": "5.4",
+  "source": {
+    "git": "https://github.com/expo/router"
+  },
+  "static_framework": true,
+  "dependencies": {
+    "ExpoModulesCore": []
+  },
+  "pod_target_xcconfig": {
+    "DEFINES_MODULE": "YES",
+    "SWIFT_COMPILATION_MODE": "wholemodule"
+  },
+  "source_files": "**/*.{h,m,swift}",
+  "swift_version": "5.4"
+}

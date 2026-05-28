@@ -27,5 +27,7 @@ export class Route extends Model {
   difficulty: DifficultyLevel = "Moderate";
 
   order: number = 0;
+  latitude?: number;
+  longitude?: number;
   createdAt: Date = new Date();
 }
