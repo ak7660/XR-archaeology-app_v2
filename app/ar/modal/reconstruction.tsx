@@ -23,9 +23,9 @@ export function ReconstructionModalBody(props: { ar_info: RemoteARInfo; close: (
 
   return (
     <View style={style.modalContainer}>
-      <Text style={style.modalTitle}>{`You've reached AR view point:\n ${ar_info?.name}`}</Text>
+      <Text style={style.modalTitle}>{`You are approaching\n${ar_info?.name}`}</Text>
       {imageSource && <Image source={imageSource} style={style.modalImage} />}
-      <Text style={style.modalText}>Do you want to try the reconstruction function with AR?</Text>
+      <Text style={style.modalText}>Would you like to explore the AR reconstruction?</Text>
       <View style={style.buttonContainer}>
         <Button
           style={style.modalButton}
@@ -34,7 +34,7 @@ export function ReconstructionModalBody(props: { ar_info: RemoteARInfo; close: (
           labelStyle={{ marginHorizontal: theme.spacing.lg, marginVertical: theme.spacing.sm }}
           onPress={gotoReconstructionGuide}
         >
-          <Text style={style.modalButtonText}>Yes, learn more</Text>
+          <Text style={style.modalButtonText}>Let's see!</Text>
         </Button>
         <Button
           style={style.modalButton}
@@ -43,7 +43,7 @@ export function ReconstructionModalBody(props: { ar_info: RemoteARInfo; close: (
           labelStyle={{ marginHorizontal: theme.spacing.lg, marginVertical: theme.spacing.sm }}
           onPress={handleClose}
         >
-          <Text style={style.modalButtonText}>No, not now</Text>
+          <Text style={style.modalButtonText}>Not interested.</Text>
         </Button>
       </View>
     </View>
