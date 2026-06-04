@@ -2,9 +2,10 @@ require('dotenv').config();
 
 module.exports = {
   expo: {
-    name: "XR Archaeology",
+    name: "Veditourism",
     slug: "xrarchaeology",
     scheme: "xrarchaeology",
+    icon: "./assets/appicon.png",
     extra: {
       eas: {
         projectId: "75d7197d-e827-450a-ae61-5198a779132d"
