@@ -81,9 +81,9 @@ android {
 
     compileSdkVersion rootProject.ext.compileSdkVersion
 
-    namespace 'hk.hku.apsapapp'
+    namespace 'com.ahmadhassan44.xrarchaeology'
     defaultConfig {
-        applicationId 'hk.hku.apsapapp'
+        applicationId 'com.ahmadhassan44.xrarchaeology'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -135,17 +135,8 @@ android {
 }
 
 dependencies {
-    implementation fileTree(dir: "libs", include: ["*.jar"])
-    //noinspection GradleDynamicVersion
-    implementation "com.facebook.react:react-native:+"  // From node_modules
-
-    // Add these lines
-    implementation project(':gvr_common')
-    implementation project(':arcore_client')
-    implementation project(path: ':react_viro')
-    implementation project(path: ':viro_renderer')
-    implementation 'com.google.android.exoplayer:exoplayer:2.7.1'
-    implementation 'com.google.protobuf.nano:protobuf-javanano:3.0.0-alpha-7'
+    // The version of react-native is set by the React Native Gradle Plugin
+    implementation("com.facebook.react:react-android")
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";
