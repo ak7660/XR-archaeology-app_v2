@@ -1,6 +1,12 @@
 import { distanceFromLatLonInKm } from "@/plugins/geolocation";
-import { ToastAndroid } from "react-native";
+import { Platform, ToastAndroid } from "react-native";
 import { LatLng } from "react-native-maps";
+
+const showDebugToast = (message: string) => {
+  if (Platform.OS === "android") {
+    ToastAndroid.show(message, ToastAndroid.SHORT);
+  }
+};
 import { getThumb } from "@/plugins/utils";
 import { ArReconstruction } from "@/models";
 import { Storyboard } from "@/models";
@@ -197,7 +203,7 @@ function findTargetInrange<T extends { point: LatLng, name: string }>(data: T[],
     const { point } = item;
     const distance = distanceFromLatLonInKm(location, point) * 1000;
     if (use_hint) {
-      ToastAndroid.show(`To ${item.name} has ${distance}m`, ToastAndroid.SHORT)
+      showDebugToast(`To ${item.name} has ${distance}m`)
     }
     // in 10m (default 20m), guide user to reconstruction;
     if (distance < d) {
@@ -240,7 +246,7 @@ export function findTargetInRangeWithTrigger<T extends { point: LatLng; name: st
     const d = item.triggerDistance ?? 20;
     const distance = distanceFromLatLonInKm(location, item.point) * 1000;
     if (options.use_hint) {
-      ToastAndroid.show(`To ${item.name} has ${distance}m`, ToastAndroid.SHORT);
+      showDebugToast(`To ${item.name} has ${distance}m`);
     }
     if (distance < d) return item;
   }

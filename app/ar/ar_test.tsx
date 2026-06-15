@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
-import { StyleSheet, View, Button, Text, ToastAndroid } from "react-native";
+import { StyleSheet, View, Button, Text, Platform, Alert, ToastAndroid } from "react-native";
+
+const showToast = (message: string) => {
+  if (Platform.OS === "android") {
+    ToastAndroid.show(message, ToastAndroid.SHORT);
+  } else {
+    Alert.alert(message);
+  }
+};
 import {
   ViroARScene,
   ViroAmbientLight,
@@ -113,7 +121,7 @@ const GuideScene = observer(() => {
           position={toJS(ModelStore.position)}
           scale={[1, 1, 1]}
           type="GLB"
-          onError={() => ToastAndroid.show("Model load failed, please retry!", ToastAndroid.SHORT)}
+          onError={() => showToast("Model load failed, please retry!")}
         />
       </ViroARScene>
     </>
@@ -206,11 +214,11 @@ const ARTest = observer(() => {
         (uri) => {
           MediaLibrary.saveToLibraryAsync(uri)
             .then(() => {
-              ToastAndroid.show("save success!", ToastAndroid.SHORT);
+              showToast("save success!");
             })
             .catch((err) => {
               console.error(uri);
-              ToastAndroid.show("save failed!", ToastAndroid.SHORT);
+              showToast("save failed!");
             });
         },
         (error) => console.error("Oops, snapshot failed", error)
@@ -247,7 +255,7 @@ const ARTest = observer(() => {
       setTimeout(async () => {
         const curOrientation = await ScreenOrientation.getOrientationAsync();
         if (curOrientation !== ScreenOrientation.Orientation.PORTRAIT_UP) {
-          ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
+          ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
         }
         appStore.setAppBar("show");
       }, 1000);
