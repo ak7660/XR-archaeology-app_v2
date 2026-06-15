@@ -4,6 +4,7 @@ import { MainBody, IconBtn, ARExploreProps, ARExploreScene, CommentDialog, Explo
 import { ChevronLeftIcon, CircleTickIcon, AddCommentIcon } from "@components/icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState, useEffect, createRef, useCallback, useRef, useMemo } from "react";
+import * as ScreenOrientation from "expo-screen-orientation";
 import { View, StyleSheet, useWindowDimensions, Platform, Image, Modal } from "react-native";
 import _ from "lodash";
 import { ActivityIndicator, Button, Text } from "react-native-paper";
@@ -42,6 +43,29 @@ function ARExplorePage() {
 
   const { initLocation, initHeading, location, heading, headingAccuracy, speed, position, cameraReady, indoor } = useARLocation();
   const preLocation = useRef<LatLng | undefined>(location);
+
+  // Gate ViroARSceneNavigator behind an async native call so the Viro native
+  // bridge finishes registering VRT* components before any scene renders.
+  // Mirrors the orientation-lock pattern used in ar_test.tsx.
+  const [isViroReady, setIsViroReady] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    async function initViro() {
+      try {
+        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+      } catch (_) {
+        // ignore — some devices reject explicit portrait lock; the barrier still worked
+      }
+      if (!cancelled) {
+        setTimeout(() => { if (!cancelled) setIsViroReady(true); }, 300);
+      }
+    }
+    initViro();
+    return () => {
+      cancelled = true;
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.DEFAULT).catch(() => {});
+    };
+  }, []);
 
   // style const
   const { theme } = useAppTheme();
@@ -428,6 +452,9 @@ function ARExplorePage() {
         </View>
       ) : (
         <Animated.View style={ARsceneStyle}>
+          {!isViroReady ? (
+            <View style={{ flex: 1, backgroundColor: "black" }} />
+          ) : (
           <ViroARSceneNavigator
             videoQuality="Low"
             worldAlignment="GravityAndHeading"
@@ -445,6 +472,7 @@ function ARExplorePage() {
               } as ARExploreProps
             }
           />
+          )}
         </Animated.View>
       )}
 
