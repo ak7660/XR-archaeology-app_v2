@@ -12,7 +12,10 @@ PODS:
     - ExpoModulesCore
   - EXFont (11.4.0):
     - ExpoModulesCore
+  - EXJSONUtils (0.7.1)
   - EXLocation (16.1.0):
+    - ExpoModulesCore
+  - EXManifests (0.7.2):
     - ExpoModulesCore
   - EXMediaLibrary (15.4.1):
     - ExpoModulesCore
@@ -20,6 +23,61 @@ PODS:
     - React-Core
   - Expo (49.0.22):
     - ExpoModulesCore
+  - expo-dev-client (2.4.13):
+    - EXManifests
+    - expo-dev-launcher
+    - expo-dev-menu
+    - expo-dev-menu-interface
+    - EXUpdatesInterface
+  - expo-dev-launcher (2.4.15):
+    - EXManifests
+    - expo-dev-launcher/Main (= 2.4.15)
+    - expo-dev-menu
+    - expo-dev-menu-interface
+    - ExpoModulesCore
+    - EXUpdatesInterface
+    - RCT-Folly (= 2021.07.22.00)
+    - React-Core
+    - React-RCTAppDelegate
+  - expo-dev-launcher/Main (2.4.15):
+    - EXManifests
+    - expo-dev-launcher/Unsafe
+    - expo-dev-menu
+    - expo-dev-menu-interface
+    - ExpoModulesCore
+    - EXUpdatesInterface
+    - RCT-Folly (= 2021.07.22.00)
+    - React-Core
+    - React-RCTAppDelegate
+  - expo-dev-launcher/Unsafe (2.4.15):
+    - EXManifests
+    - expo-dev-menu
+    - expo-dev-menu-interface
+    - ExpoModulesCore
+    - EXUpdatesInterface
+    - RCT-Folly (= 2021.07.22.00)
+    - React-Core
+    - React-RCTAppDelegate
+  - expo-dev-menu (3.2.4):
+    - expo-dev-menu/Main (= 3.2.4)
+    - RCT-Folly (= 2021.07.22.00)
+    - React-Core
+  - expo-dev-menu-interface (1.3.0)
+  - expo-dev-menu/Main (3.2.4):
+    - EXManifests
+    - expo-dev-menu-interface
+    - expo-dev-menu/Vendored
+    - ExpoModulesCore
+    - RCT-Folly (= 2021.07.22.00)
+    - React-Core
+  - expo-dev-menu/SafeAreaView (3.2.4):
+    - ExpoModulesCore
+    - RCT-Folly (= 2021.07.22.00)
+    - React-Core
+  - expo-dev-menu/Vendored (3.2.4):
+    - expo-dev-menu/SafeAreaView
+    - RCT-Folly (= 2021.07.22.00)
+    - React-Core
   - ExpoGL (13.0.1):
     - ExpoModulesCore
     - ReactCommon/turbomodule/core
@@ -47,6 +105,7 @@ PODS:
     - ExpoModulesCore
     - RCT-Folly (= 2021.07.22.00)
     - React-Core
+  - EXUpdatesInterface (0.10.1)
   - FBLazyVector (0.72.10)
   - FBReactNativeSpec (0.72.10):
     - RCT-Folly (= 2021.07.22.00)
@@ -379,6 +438,8 @@ PODS:
     - React-Core
   - react-native-view-shot (3.7.0):
     - React-Core
+  - react-native-webview (13.2.2):
+    - React-Core
   - React-NativeModulesApple (0.72.10):
     - hermes-engine
     - React-callinvoker
@@ -526,10 +587,6 @@ PODS:
   - RNSVG (13.9.0):
     - React-Core
   - SocketRocket (0.6.1)
-  - ViroKit (1.0):
-    - React
-  - ViroReact (1.0):
-    - React
   - Yoga (1.14.0)
 
 DEPENDENCIES:
@@ -540,9 +597,15 @@ DEPENDENCIES:
   - EXConstants (from `../node_modules/expo-constants/ios`)
   - EXFileSystem (from `../node_modules/expo-file-system/ios`)
   - EXFont (from `../node_modules/expo-font/ios`)
+  - EXJSONUtils (from `../node_modules/expo-json-utils/ios`)
   - EXLocation (from `../node_modules/expo-location/ios`)
+  - EXManifests (from `../node_modules/expo-manifests/ios`)
   - EXMediaLibrary (from `../node_modules/expo-media-library/ios`)
   - Expo (from `../node_modules/expo`)
+  - expo-dev-client (from `../node_modules/expo-dev-client/ios`)
+  - expo-dev-launcher (from `../node_modules/expo-dev-launcher`)
+  - expo-dev-menu (from `../node_modules/expo-dev-menu`)
+  - expo-dev-menu-interface (from `../node_modules/expo-dev-menu-interface/ios`)
   - ExpoGL (from `../node_modules/expo-gl`)
   - ExpoHead (from `../node_modules/expo-head/ios`)
   - ExpoKeepAwake (from `../node_modules/expo-keep-awake/ios`)
@@ -552,6 +615,7 @@ DEPENDENCIES:
   - ExpoSecureStore (from `../node_modules/expo-secure-store/ios`)
   - ExpoSpeech (from `../node_modules/expo-speech/ios`)
   - EXSplashScreen (from `../node_modules/expo-splash-screen/ios`)
+  - EXUpdatesInterface (from `../node_modules/expo-updates-interface/ios`)
   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
   - FBReactNativeSpec (from `../node_modules/react-native/React/FBReactNativeSpec`)
   - glog (from `../node_modules/react-native/third-party-podspecs/glog.podspec`)
@@ -579,6 +643,7 @@ DEPENDENCIES:
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - "react-native-slider (from `../node_modules/@react-native-community/slider`)"
   - react-native-view-shot (from `../node_modules/react-native-view-shot`)
+  - react-native-webview (from `../node_modules/react-native-webview`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-perflogger (from `../node_modules/react-native/ReactCommon/reactperflogger`)
   - React-RCTActionSheet (from `../node_modules/react-native/Libraries/ActionSheetIOS`)
@@ -600,8 +665,6 @@ DEPENDENCIES:
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNSVG (from `../node_modules/react-native-svg`)
-  - "ViroKit (from `../node_modules/@viro-community/react-viro/ios/dist/ViroRenderer/`)"
-  - "ViroReact (from `../node_modules/@viro-community/react-viro/ios/`)"
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
 SPEC REPOS:
@@ -625,12 +688,24 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-file-system/ios"
   EXFont:
     :path: "../node_modules/expo-font/ios"
+  EXJSONUtils:
+    :path: "../node_modules/expo-json-utils/ios"
   EXLocation:
     :path: "../node_modules/expo-location/ios"
+  EXManifests:
+    :path: "../node_modules/expo-manifests/ios"
   EXMediaLibrary:
     :path: "../node_modules/expo-media-library/ios"
   Expo:
     :path: "../node_modules/expo"
+  expo-dev-client:
+    :path: "../node_modules/expo-dev-client/ios"
+  expo-dev-launcher:
+    :path: "../node_modules/expo-dev-launcher"
+  expo-dev-menu:
+    :path: "../node_modules/expo-dev-menu"
+  expo-dev-menu-interface:
+    :path: "../node_modules/expo-dev-menu-interface/ios"
   ExpoGL:
     :path: "../node_modules/expo-gl"
   ExpoHead:
@@ -649,6 +724,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-speech/ios"
   EXSplashScreen:
     :path: "../node_modules/expo-splash-screen/ios"
+  EXUpdatesInterface:
+    :path: "../node_modules/expo-updates-interface/ios"
   FBLazyVector:
     :path: "../node_modules/react-native/Libraries/FBLazyVector"
   FBReactNativeSpec:
@@ -699,6 +776,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-community/slider"
   react-native-view-shot:
     :path: "../node_modules/react-native-view-shot"
+  react-native-webview:
+    :path: "../node_modules/react-native-webview"
   React-NativeModulesApple:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios"
   React-perflogger:
@@ -741,10 +820,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-screens"
   RNSVG:
     :path: "../node_modules/react-native-svg"
-  ViroKit:
-    :path: "../node_modules/@viro-community/react-viro/ios/dist/ViroRenderer/"
-  ViroReact:
-    :path: "../node_modules/@viro-community/react-viro/ios/"
   Yoga:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
@@ -756,9 +831,15 @@ SPEC CHECKSUMS:
   EXConstants: e7d8d1bec9a20242b4f92a9d66967c3904e0dcd0
   EXFileSystem: 1aeed803248e2b62c5cde8b8d8c6cb1525fc40c1
   EXFont: aa39b3f790e2b3188986ac5e8684cf6003c00a18
+  EXJSONUtils: 6802be4282d42b97c51682468ddc1026a06f8276
   EXLocation: a1f00cc5db80e6e159a1bea8de3147dedb5d60b6
+  EXManifests: bb8592a34f5339c860b6c4bc71ad583d490374fb
   EXMediaLibrary: 87ce4e423444e566e9394bf4d7324b1c7b0b51e0
   Expo: 1a7f3f87fbb107151f500decd1c1b9dc24ca58e6
+  expo-dev-client: 3902515adf9d7a59e63600f16095649bef48378b
+  expo-dev-launcher: 02fc55fccaee6d2a97ee1c739a0e4946090e4b37
+  expo-dev-menu: cc50dfc09a654cb5d74ac3482f0c49ca1268117d
+  expo-dev-menu-interface: 22ea9639725e26dfebcb16ea631ddec660827374
   ExpoGL: a3bb27ee60f2a6f69e5954ede0872b9bcafeaf64
   ExpoHead: c7b5eb54105bc827b247eeef1738e011df732cf4
   ExpoKeepAwake: 8ab1087501f5ccb91146447756b787575b13f13e
@@ -768,6 +849,7 @@ SPEC CHECKSUMS:
   ExpoSecureStore: 4682182dd6bdbd73dde41e91d0a4e205a96b819f
   ExpoSpeech: de04e9f6be62d236bfd11fbedbcf8f26868d0a68
   EXSplashScreen: 84a7d9a965a2203e138528326fc3a511818e3fd1
+  EXUpdatesInterface: 82ed48d417cdcd376c12ca1c2ce390d35500bed6
   FBLazyVector: f91d538f197fa71a7d5b77ec2069d49550c0eb96
   FBReactNativeSpec: b13d1c23d6ed82d6b66aad7a253edf8ba76c4a4c
   fmt: ff9d55029c625d3757ed641535fd4a75fedc7ce9
@@ -795,6 +877,7 @@ SPEC CHECKSUMS:
   react-native-safe-area-context: f998d7c030d9c89b0a745f8466f1f988478d822e
   react-native-slider: 3051c537444d711b566d1e4d681c6cd35081ae6f
   react-native-view-shot: ece7d83e8d7066b32efed47aad09acd8f99f1011
+  react-native-webview: 65c16ff14c50a6c3d3cf2c6e4b60b47b413dbaf8
   React-NativeModulesApple: cb6d3c0f057dbd98545ddf1ec047f225d1dd9bf9
   React-perflogger: 43287389ea08993c300897a46f95cfac04bb6c1a
   React-RCTActionSheet: 923afe77f9bb89da7c1f98e2730bfc9dde0eed6d
@@ -817,10 +900,8 @@ SPEC CHECKSUMS:
   RNScreens: 39db1910d2ea9ae885dcda43086818e9f8b714d0
   RNSVG: 67c430ac7a54043cac37f6bd7bc94f8e22d8a64a
   SocketRocket: f32cd54efbe0f095c4d7594881e52619cfe80b17
-  ViroKit: 728e2547f4ac693a69fa7652813ec178a361dbd6
-  ViroReact: 0fe7ad200cee750209ef1e767f677a90f4736bf0
   Yoga: d0003f849d2b5224c072cef6568b540d8bb15cd3
 
-PODFILE CHECKSUM: 445238146390932769fe03a7b22e0d7476cf7bae
+PODFILE CHECKSUM: e884e3bbc48c8c29103ba9c8553f80716785b517
 
 COCOAPODS: 1.16.2

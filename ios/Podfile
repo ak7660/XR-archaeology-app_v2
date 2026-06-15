@@ -37,7 +37,7 @@ elsif podfile_properties.key?('ios.flipper') then
   end
 end
 
-target 'XRarchaeology' do
+target 'Veditourism' do
   use_expo_modules!
   config = use_native_modules!
 
@@ -56,8 +56,6 @@ target 'XRarchaeology' do
     # Note that if you have use_frameworks! enabled, Flipper will not work if enabled
     :flipper_configuration => flipper_config
   )
-  pod 'ViroReact', :path => '../node_modules/@viro-community/react-viro/ios/'
-  pod 'ViroKit', :path => '../node_modules/@viro-community/react-viro/ios/dist/ViroRenderer/'
 
   post_install do |installer|
     react_native_post_install(
@@ -66,6 +64,14 @@ target 'XRarchaeology' do
       :mac_catalyst_enabled => false
     )
     __apply_Xcode_12_5_M1_post_install_workaround(installer)
+
+    installer.pods_project.targets.each do |target|
+      if target.name == 'Yoga'
+        target.build_configurations.each do |config|
+          config.build_settings['OTHER_CPLUSPLUSFLAGS'] = '$(inherited) -Wno-deprecated-literal-operator'
+        end
+      end
+    end
 
     # This is necessary for Xcode 14, because it signs resource bundles by default
     # when building for devices.
