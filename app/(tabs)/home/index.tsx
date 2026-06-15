@@ -127,13 +127,13 @@ export default function Home() {
         >
           <Button
             mode="contained"
-            icon="map-marker-path"
+            icon={() => <Image source={require("@assets/bot.png")} style={{ width: 22, height: 22, tintColor: "white" }} />}
             onPress={() => router.push(Routes.TripPlanner)}
             style={{ borderRadius: theme.spacing.xs }}
             contentStyle={{ paddingVertical: theme.spacing.xs }}
           >
             <Text variant="labelLarge" style={{ color: theme.colors.textOnPrimary }}>
-              Plan Your Trip
+              Plan Your Trip with AI
             </Text>
           </Button>
           <View style={style.divider} />
