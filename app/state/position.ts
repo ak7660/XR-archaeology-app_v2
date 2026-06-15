@@ -34,6 +34,7 @@ export class ArModelState {
     this.radio = init_state.radio;
     this.stage = init_state.stage;
     this.rotation = init_state.rotation;
+    this.position = [0, 0, -1 * this.distance];
   }
 
   setRadio(radio: number) {
