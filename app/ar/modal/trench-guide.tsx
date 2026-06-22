@@ -14,16 +14,26 @@ export function TrenchModalBody(props: { trench_info: RemoteTrenchInfo; close: (
   const min_page = 0;
 
   // Support both backend pages[] format and legacy text[]/image[] format
-  const pages = trench_info.pages;
+  const pages = trench_info.pages ?? [];
   const max_page = pages.length - 1;
 
   const [agree, setAgree] = useState(false);
+
+  const intro_image_source = useMemo(() => {
+    if (trench_info.introPage?.images?.length) return resolveImageSource(trench_info.introPage.images[0]);
+    return undefined;
+  }, [trench_info.introPage]);
+
   const image_source = useMemo(() => {
     const p = pages[page];
     if (!p) return undefined;
-    const imgId = trench_info.images?.[p.imageIndex];
-    return resolveImageSource(imgId);
+    // New format: images embedded per page
+    if (p.images?.length) return resolveImageSource(p.images[0]);
+    // Legacy format: imageIndex into top-level images array
+    if (p.imageIndex != null) return resolveImageSource(trench_info.images?.[p.imageIndex]);
+    return undefined;
   }, [page, pages, trench_info.images]);
+
   const text = useMemo(() => {
     return pages[page]?.text ?? '';
   }, [page, pages]);
@@ -31,7 +41,8 @@ export function TrenchModalBody(props: { trench_info: RemoteTrenchInfo; close: (
   return (
     <View style={style.modalContainer}>
       <Text style={style.modalText}>{!agree ? `You've reached ${'\n'} ${trench_info.name}` : trench_info.name}</Text>
-      {image_source && <Image source={image_source} style={style.modalImage} />}
+      {!agree && intro_image_source && <Image source={intro_image_source} style={style.modalImage} />}
+      {agree && image_source && <Image source={image_source} style={style.modalImage} />}
 
       {agree ? (
         <>
@@ -67,7 +78,7 @@ export function TrenchModalBody(props: { trench_info: RemoteTrenchInfo; close: (
         </>
       ) : (
         <>
-          <Text style={style.descText}>Do you want to view the introduction?</Text>
+          <Text style={style.descText}>{trench_info.introPage?.text ?? "Do you want to view the introduction?"}</Text>
           <View style={style.pagination}>
             <Button
               style={style.modalButton}

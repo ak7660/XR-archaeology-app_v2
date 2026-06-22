@@ -25,7 +25,7 @@ export function ReconstructionModalBody(props: { ar_info: RemoteARInfo; close: (
     <View style={style.modalContainer}>
       <Text style={style.modalTitle}>{`You are approaching\n${ar_info?.name}`}</Text>
       {imageSource && <Image source={imageSource} style={style.modalImage} />}
-      <Text style={style.modalText}>Would you like to explore the AR reconstruction?</Text>
+      <Text style={style.modalText}>{ar_info.briefDesc ?? "Would you like to explore the AR reconstruction?"}</Text>
       <View style={style.buttonContainer}>
         <Button
           style={style.modalButton}

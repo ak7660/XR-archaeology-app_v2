@@ -125,7 +125,7 @@ function ARExplorePage() {
       }
       try {
         const [arRes, stRes] = await Promise.all([
-          feathers.service("arReconstructions").find({ query: { route: routeId, $sort: { order: 1 } } }).catch((err) => {
+          feathers.service("arReconstructions").find({ query: { route: routeId, $populate: ["location"], $sort: { order: 1 } } }).catch((err) => {
             console.warn("[AR Explore] arReconstructions fetch error:", err?.message || err);
             return { data: [] };
           }),
