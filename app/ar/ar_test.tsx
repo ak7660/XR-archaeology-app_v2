@@ -252,13 +252,8 @@ const ARTest = observer(() => {
     initOrientation();
     
     return () => {
-      setTimeout(async () => {
-        const curOrientation = await ScreenOrientation.getOrientationAsync();
-        if (curOrientation !== ScreenOrientation.Orientation.PORTRAIT_UP) {
-          ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
-        }
-        appStore.setAppBar("show");
-      }, 1000);
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
+      appStore.setAppBar("show");
     };
   }, []);
   // @ts-ignore
