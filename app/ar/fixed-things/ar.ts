@@ -38,8 +38,12 @@ export interface RemoteTrenchInfo {
   latitude: number;
   longitude: number;
   point: LatLng;
-  images?: string[];     // Attachment IDs
-  pages: { text: string; imageIndex: number }[];
+  /** Legacy top-level images array */
+  images?: string[];
+  /** New: intro page with customizable text shown on the initial proximity popup */
+  introPage?: { text?: string; images?: string[] };
+  /** New format: each page has its own images[]; legacy format used imageIndex into top-level images */
+  pages: { text: string; images?: string[]; imageIndex?: number }[];
   route: string;
   triggerDistance?: number;
   order?: number;
@@ -47,18 +51,36 @@ export interface RemoteTrenchInfo {
 
 /** Convert backend ArReconstruction records to RemoteARInfo with computed `point` */
 export function toRemoteARInfos(records: ArReconstruction[]): RemoteARInfo[] {
-  return records.map(r => ({
-    ...r,
-    point: { latitude: r.latitude, longitude: r.longitude },
-  }));
+  return records
+    .map(r => {
+      // New schema: coordinates live on the populated location object
+      const loc = r.location && typeof r.location === 'object' ? r.location : null;
+      const lat = loc?.latitude ?? r.latitude;
+      const lng = loc?.longitude ?? r.longitude;
+      if (lat == null || lng == null) return null;
+      return {
+        ...r,
+        latitude: lat,
+        longitude: lng,
+        point: { latitude: lat, longitude: lng },
+      } as RemoteARInfo;
+    })
+    .filter((r): r is RemoteARInfo => r !== null);
 }
 
-/** Convert backend Storyboard records to RemoteTrenchInfo with computed `point` */
+/** Convert backend Storyboard records to RemoteTrenchInfo with computed `point`.
+ *  Records without valid coordinates are dropped — otherwise a <Marker> with
+ *  undefined lat/lng crashes react-native-maps natively on Android. */
 export function toRemoteTrenchInfos(records: Storyboard[]): RemoteTrenchInfo[] {
-  return records.map(r => ({
-    ...r,
-    point: { latitude: r.latitude, longitude: r.longitude },
-  }));
+  return records
+    .map(r => {
+      if (r.latitude == null || r.longitude == null) return null;
+      return {
+        ...r,
+        point: { latitude: r.latitude, longitude: r.longitude },
+      } as RemoteTrenchInfo;
+    })
+    .filter((r): r is RemoteTrenchInfo => r !== null);
 }
 
 /** Resolve an image value to an Image source prop. Handles both local require() numbers and remote Attachment ID strings. */

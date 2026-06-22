@@ -2,16 +2,26 @@ import { Model } from "./utils";
 
 export interface StoryboardPage {
   text: string;
-  imageIndex: number;
+  /** New format: images embedded per page */
+  images?: string[];
+  /** Legacy format: index into top-level Storyboard.images array */
+  imageIndex?: number;
+}
+
+export interface StoryboardIntroPage {
+  text?: string;
+  images?: string[];
 }
 
 export class Storyboard extends Model {
   name!: string;
   latitude!: number;
   longitude!: number;
-  /** Array of Attachment IDs for storyboard images */
+  /** Intro page — new top-level field; text is shown on the initial "approach" popup */
+  introPage?: StoryboardIntroPage;
+  /** Legacy top-level images array (old format) */
   images?: string[];
-  /** Ordered pages of the storyboard guide */
+  /** Ordered content pages */
   pages!: StoryboardPage[];
   /** Route ID this storyboard point belongs to */
   route!: string;
