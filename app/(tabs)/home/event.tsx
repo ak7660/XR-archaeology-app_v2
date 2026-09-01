@@ -1,4 +1,4 @@
-import { AppBar, Carousel, MainBody, NAVBAR_HEIGHT, Icons, NumInput, ErrorPage, LoadingPage } from "@/components";
+import { AppBar, Carousel, MainBody, NAVBAR_HEIGHT, NumInput, ErrorPage, LoadingPage } from "@/components";
 import { CalendarIcon, CalendarOutlinedIcon, LocationIcon, ProfileIcon } from "@/components/icons";
 import { Event } from "@/models";
 import { useAuth } from "@/providers/auth_provider";
@@ -7,9 +7,23 @@ import { useLanguage } from "@/providers/language_provider";
 import { AppTheme, useAppTheme } from "@/providers/style_provider";
 import { useLocalSearchParams } from "expo-router";
 import moment from "moment";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { ActivityIndicator, Button, Text, Title } from "react-native-paper";
+import { Button, Text } from "react-native-paper";
+
+/** A time is only worth showing if the editor actually set one.
+ *
+ * `startDate`/`endDate` are full timestamps, but an all-day event is stored as
+ * midnight. Printing "00:00" for those is noise, so times are shown only when
+ * at least one end of the event carries a real time.
+ */
+function hasMeaningfulTime(start?: Date | string, end?: Date | string) {
+  return [start, end].some((value) => {
+    if (!value) return false;
+    const m = moment(value);
+    return m.isValid() && (m.hours() !== 0 || m.minutes() !== 0);
+  });
+}
 
 export default function Page() {
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -50,20 +64,58 @@ export default function Page() {
     init();
   }, []);
 
-  function renderTableRow({ title, value, icon }: { title: string; value: string; icon?: React.ReactNode }) {
+  const showTime = useMemo(() => hasMeaningfulTime(event?.startDate, event?.endDate), [event]);
+  const dateFormat = showTime ? "ddd, D MMM YYYY" : "ddd, D MMM YYYY";
+
+  /** One line per date, with the time on its own row when there is one. */
+  function formatWhen(value?: Date) {
+    if (!value) return { date: "", time: "" };
+    const m = moment(value);
+    if (!m.isValid()) return { date: "", time: "" };
+    return { date: m.format(dateFormat), time: showTime ? m.format("HH:mm") : "" };
+  }
+
+  const start = formatWhen(event?.startDate);
+  const end = event?.endDate ? formatWhen(event.endDate) : null;
+  const sameDay = !!(event?.endDate && moment(event.startDate).isSame(moment(event.endDate), "day"));
+
+  /** A single row of the details card.
+   *
+   * The icon sits in a fixed-size badge and the text in a flexed column, so a
+   * longer label can never push the icon onto its own line - the previous
+   * layout used a fixed-width wrapping header, which is why "Start Date" and
+   * "End Date" ended up aligned differently.
+   */
+  function DetailRow({
+    icon,
+    label,
+    value,
+    hint,
+    last,
+  }: {
+    icon: React.ReactNode;
+    label: string;
+    value: string;
+    hint?: string;
+    last?: boolean;
+  }) {
+    if (!value) return null;
     return (
-      <View style={style.tableRow}>
-        <View style={style.tableHeader}>
-          {icon && icon}
-          <Text variant="bodyMedium" style={{ color: theme.colors.textOnPrimary, textAlignVertical: "center" }}>
-            {title}
+      <View style={[style.detailRow, !last && style.detailRowDivider]}>
+        <View style={style.iconBadge}>{icon}</View>
+        <View style={style.detailText}>
+          <Text variant="bodySmall" style={{ color: theme.colors.grey2 }}>
+            {label}
           </Text>
-        </View>
-        <View style={style.tableCell}>
-          <Text variant="labelMedium" style={{ color: theme.colors.secondary, textAlignVertical: "center" }}>
+          <Text variant="labelMedium" style={{ color: theme.colors.text }}>
             {value}
           </Text>
         </View>
+        {!!hint && (
+          <Text variant="labelMedium" style={style.hint}>
+            {hint}
+          </Text>
+        )}
       </View>
     );
   }
@@ -76,42 +128,62 @@ export default function Page() {
       ) : event ? (
         <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: NAVBAR_HEIGHT + theme.spacing.md }}>
           {event.images && <Carousel images={event.images} />}
+
           <View style={style.topSection}>
             <Text variant="headlineSmall" style={{ color: theme.colors.text }}>
               {getLocalizedText(event.name)}
             </Text>
-            {event.content ? (
-              <Text variant="bodyMedium" style={{ color: theme.colors.text }}>
-                {getLocalizedText(event.content)}
+            {!!event.briefDesc && (
+              <Text variant="bodyMedium" style={{ color: theme.colors.grey2 }}>
+                {getLocalizedText(event.briefDesc)}
               </Text>
-            ) : (
-              event.briefDesc && (
-                <Text variant="bodyMedium" style={{ color: theme.colors.text }}>
-                  {getLocalizedText(event.briefDesc)}
-                </Text>
-              )
             )}
           </View>
 
-          {/* Table */}
-          <View style={[style.table, { marginBottom: theme.spacing.xl }]}>
-            {renderTableRow({
-              title: "Start Date",
-              value: moment(event.startDate).format("DD MMM,YYYY"),
-              icon: <CalendarOutlinedIcon fill={theme.colors.textOnPrimary} />,
-            })}
-            {event.endDate &&
-              renderTableRow({
-                title: "End Date",
-                value: moment(event.endDate).format("DD MMM, YYYY"),
-                icon: <CalendarIcon fill={theme.colors.textOnPrimary} />,
-              })}
-            {venueName && renderTableRow({ title: "Venue", value: venueName, icon: <LocationIcon fill={theme.colors.textOnPrimary} /> })}
+          {/* When & where */}
+          <View style={style.card}>
+            <DetailRow
+              icon={<CalendarOutlinedIcon fill={theme.colors.primary} size={20} />}
+              label={sameDay ? "Date" : "Starts"}
+              value={start.date}
+              hint={start.time}
+              last={!end && !venueName}
+            />
+            {end && !sameDay && (
+              <DetailRow
+                icon={<CalendarIcon fill={theme.colors.primary} size={20} />}
+                label="Ends"
+                value={end.date}
+                hint={end.time}
+                last={!venueName}
+              />
+            )}
+            {end && sameDay && showTime && (
+              <DetailRow
+                icon={<CalendarIcon fill={theme.colors.primary} size={20} />}
+                label="Time"
+                value={`${start.time} - ${end.time}`}
+                last={!venueName}
+              />
+            )}
+            {!!venueName && (
+              <DetailRow icon={<LocationIcon fill={theme.colors.primary} size={20} />} label="Venue" value={venueName} last />
+            )}
           </View>
+
+          {/* Full description */}
+          {!!event.content && (
+            <View style={style.contentSection}>
+              <Text variant="bodyMedium" style={{ color: theme.colors.text, lineHeight: 22 }}>
+                {getLocalizedText(event.content)}
+              </Text>
+            </View>
+          )}
+
           {/* Reservation */}
           {authenticated && (
-            <View style={{ marginBottom: theme.spacing.xl }}>
-              <Text variant="titleMedium" style={{ paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.xs }}>
+            <View style={{ marginBottom: theme.spacing.lg }}>
+              <Text variant="titleMedium" style={style.sectionTitle}>
                 Reservation
               </Text>
 
@@ -148,9 +220,15 @@ export default function Page() {
               </View>
             </View>
           )}
+
           {/* Footer */}
           <View style={style.footer}>
-            <Button mode="contained" style={{ borderRadius: theme.borderRadius.xs }} textColor={theme.colors.textOnPrimary}>
+            <Button
+              mode="contained"
+              style={{ borderRadius: theme.borderRadius.sm }}
+              contentStyle={{ paddingVertical: theme.spacing.xxs }}
+              textColor={theme.colors.textOnPrimary}
+            >
               {authenticated ? "Book now" : "Sign up to book now"}
             </Button>
           </View>
@@ -161,47 +239,64 @@ export default function Page() {
     </MainBody>
   );
 }
+
 const useStyle = ({ theme }: { theme: AppTheme }) =>
   StyleSheet.create({
     center: { flex: 1, justifyContent: "center", alignContent: "center" },
     topSection: {
       flexDirection: "column",
       paddingHorizontal: theme.spacing.lg,
-      rowGap: theme.spacing.sm,
+      rowGap: theme.spacing.xs,
       marginTop: theme.spacing.md,
+      marginBottom: theme.spacing.md,
     },
-    table: {
-      flexDirection: "column",
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.md,
-      rowGap: 2,
-    },
-    tableRow: {
-      flexDirection: "row",
-      columnGap: 2,
-      borderRadius: theme.borderRadius.xs,
+    card: {
+      marginHorizontal: theme.spacing.lg,
+      marginBottom: theme.spacing.lg,
+      backgroundColor: theme.colors.container,
+      borderRadius: theme.borderRadius.md,
+      borderWidth: 1,
+      borderColor: theme.colors.grey4,
       overflow: "hidden",
     },
-    tableHeader: {
-      backgroundColor: theme.colors.primary,
-      color: theme.colors.textOnPrimary,
-      width: 120,
+    detailRow: {
       flexDirection: "row",
-      columnGap: theme.spacing.xs,
-      flexWrap: "wrap",
-      alignContent: "center",
-      paddingVertical: theme.spacing.xxs,
-      paddingHorizontal: theme.spacing.xs,
+      alignItems: "center",
+      columnGap: theme.spacing.sm,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
     },
-    tableCell: {
+    detailRowDivider: {
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.grey4,
+    },
+    // Fixed square badge: the icon can never wrap away from its label, which
+    // is what misaligned the old Start/End rows.
+    iconBadge: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: theme.colors.background,
+    },
+    detailText: {
       flex: 1,
-      backgroundColor: theme.colors.textOnPrimary,
-      color: theme.colors.secondary,
-      paddingVertical: theme.spacing.xxs,
-      paddingHorizontal: theme.spacing.xs,
-      flexDirection: "row",
-      alignContent: "center",
-      minHeight: 32,
+      flexDirection: "column",
+      rowGap: 2,
+    },
+    hint: {
+      color: theme.colors.primary,
+      marginLeft: theme.spacing.sm,
+    },
+    contentSection: {
+      paddingHorizontal: theme.spacing.lg,
+      marginBottom: theme.spacing.lg,
+    },
+    sectionTitle: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.xs,
+      color: theme.colors.text,
     },
     row: {
       flexDirection: "row",
@@ -220,6 +315,6 @@ const useStyle = ({ theme }: { theme: AppTheme }) =>
     },
     footer: {
       paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.xl,
+      paddingVertical: theme.spacing.lg,
     },
   });
