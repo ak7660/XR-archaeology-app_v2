@@ -16,6 +16,12 @@ interface FormField<T> {
   inner?: FormField<T>[];
   maxLength?: number;
   onPress?: () => void;
+  /** Hide what is typed (passwords), with a button to show it. */
+  secure?: boolean;
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
+  /** Autofill hint, e.g. "email", "password", "new-password", "one-time-code". */
+  autoComplete?: any;
+  editable?: boolean;
 }
 
 export interface Props {
@@ -28,6 +34,7 @@ export default function Form({ fields, setValid, spacing }: Props) {
   const { theme } = useAppTheme();
   const style = useStyle(theme);
   const [errors, setErrors] = useState<(string | undefined)[]>(fields.map((_) => undefined));
+  const [revealed, setRevealed] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     const valid = errors.every((it) => it === undefined || !it.length);
@@ -44,6 +51,20 @@ export default function Form({ fields, setValid, spacing }: Props) {
           outlineColor={theme.colors.grey4}
           value={field.value}
           keyboardType={field.keyboardType}
+          secureTextEntry={field.secure && !revealed[index]}
+          autoCapitalize={field.autoCapitalize ?? (field.secure ? "none" : undefined)}
+          autoComplete={field.autoComplete}
+          autoCorrect={field.secure || field.keyboardType === "email-address" ? false : undefined}
+          editable={field.editable}
+          right={
+            field.secure ? (
+              <TextInput.Icon
+                icon={revealed[index] ? "eye-off" : "eye"}
+                onPress={() => setRevealed((r) => ({ ...r, [index]: !r[index] }))}
+                forceTextInputFocus={false}
+              />
+            ) : undefined
+          }
           onChangeText={(value) => {
             if (field.maxLength && value.length > field.maxLength) return;
             if (field.validator) {

@@ -5,7 +5,8 @@ import { useAuth } from "@/providers/auth_provider";
 import { useFeathers } from "@/providers/feathers_provider";
 import { useLanguage } from "@/providers/language_provider";
 import { AppTheme, useAppTheme } from "@/providers/style_provider";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
+import { Routes } from "@/app/composable/routes";
 import moment from "moment";
 import { useEffect, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
@@ -257,6 +258,7 @@ export default function Page() {
                 style={{ borderRadius: theme.borderRadius.sm }}
                 contentStyle={{ paddingVertical: theme.spacing.xxs }}
                 textColor={theme.colors.textOnPrimary}
+                onPress={authenticated ? undefined : () => router.push(Routes.Login)}
               >
                 {authenticated ? "Book now" : "Sign up to book now"}
               </Button>

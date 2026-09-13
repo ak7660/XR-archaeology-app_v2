@@ -5,6 +5,7 @@ export default function StackLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="profile" />
+      <Stack.Screen name="change_password" />
       <Stack.Screen name="settings" />
       <Stack.Screen name="help_feedback" />
       <Stack.Screen name="user_evaluation" />

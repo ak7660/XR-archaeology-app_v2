@@ -1,9 +1,17 @@
 import { User } from "@/models";
-import React, { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import * as SecureStore from "expo-secure-store";
 import { useFeathers } from "./feathers_provider";
+import { useLanguage } from "./language_provider";
 import _ from "lodash";
 
+/**
+ * Who is using the app.
+ *
+ * A guest has a `user` without `_id`: favourites and the AR collection live only
+ * on the phone. Signing in (or signing up) merges them into the account, which
+ * then keeps them on the server (XR-archaeology-server `users` on the public API).
+ */
 class AuthState {
   user?: User;
   token?: string;
@@ -25,6 +33,16 @@ class AuthContext {
   login: (props: AuthProps) => Promise<void>;
   logout: () => Promise<boolean>;
   register: (user: Partial<User>) => Promise<void>;
+  /** Confirm the email address with the emailed 6-digit code. */
+  verifyEmail: (code: string) => Promise<void>;
+  resendVerification: () => Promise<void>;
+  /** Email a password-reset code. Answers the same whether or not the email has an account. */
+  forgotPassword: (email: string) => Promise<void>;
+  /** Set a new password with the emailed code, then sign in with it. */
+  resetPassword: (email: string, code: string, password: string) => Promise<void>;
+  changePassword: (currentPassword: string, password: string) => Promise<void>;
+  /** Delete the account and everything it owns, then continue as a guest. */
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthStore = createContext<AuthContext | null>(null);
@@ -35,55 +53,67 @@ interface Props {
   fallback?: () => void;
 }
 
-export function AuthProvider({ children, fallback }: Props) {
+const localStorageKey = "authState";
+
+/** The session is over (password changed elsewhere, account deleted, token expired). */
+function isSessionEnded(error: any) {
+  return error?.code === 401 || error?.name === "NotAuthenticated";
+}
+
+/** Someone using the app without an account: what they save stays on the phone. */
+function guestUser(bookmarks: string[] = [], collections: string[] = []): User {
+  return Object.assign(new User(), { bookmarks, collections });
+}
+
+/** Items in `extra` that `base` lacks, appended in order. */
+function union(base: string[] = [], extra: string[] = []) {
+  return _.uniq([...base, ...extra].map(String));
+}
+
+export function AuthProvider({ children }: Props) {
   const feathers = useFeathers();
+  const { language } = useLanguage();
   const [state, setState] = useState<AuthState>(() => new AuthState());
+  const stateRef = useRef(state);
+  stateRef.current = state;
   const authPromise = useRef<Promise<void | null> | null>(null);
   const authenticated = useRef(false);
-  /**
-   * Retrieve authState from local storage
-   */
+  const loaded = useRef(false);
+
   useEffect(() => {
     async function init() {
       handleFeathers();
-      let res = await fromStorage();
-      if (res) {
-        setState(res);
-      } else {
-        // new user
-        updateUser({ bookmarks: [], collections: [] });
-      }
-      const user = await syncUser();
-      if (user) {
-        setState((state) => ({ ...state, user }));
+      const stored = await fromStorage();
+      if (stored) setState(stored);
+      else setState({ user: guestUser() });
+      loaded.current = true;
+      if (stored?.token) {
+        // Refresh the account from the server; also catches a session ended elsewhere.
+        await reAuthentication(true, stored.token).catch(() => {});
       }
     }
     init();
   }, []);
 
   useEffect(() => {
-    localSave();
+    if (loaded.current) localSave(state);
   }, [state]);
 
-  const localStorageKey = "authState";
-
-  async function syncUser(): Promise<User | undefined> {
-    if (state.token && state.user?._id) {
-      console.log("update latest user's info");
-      try {
-        const me = await feathers.service("users").get(state.user._id);
-        return me;
-      } catch (error) {
-        console.warn(`fail to sync user`, error);
-      }
+  // Keep the account's language in step with the app, so emails arrive in it.
+  useEffect(() => {
+    const user = stateRef.current.user;
+    if (user?._id && stateRef.current.token && user.language !== language) {
+      feathers
+        .service("users")
+        .patch(user._id, { language })
+        .then((u: User) => setState((s) => ({ ...s, user: u })))
+        .catch(() => {});
     }
-    return;
-  }
+  }, [language, state.user?._id]);
 
-  async function localSave(): Promise<boolean> {
-    const res = JSON.stringify(state);
+  async function localSave(value: AuthState): Promise<boolean> {
     try {
-      if (res) await SecureStore.setItemAsync(localStorageKey, res);
+      await SecureStore.setItemAsync(localStorageKey, JSON.stringify(value));
       return true;
     } catch {
       return false;
@@ -99,48 +129,56 @@ export function AuthProvider({ children, fallback }: Props) {
   }
   async function fromStorage(): Promise<AuthState | undefined> {
     try {
-      let res = await SecureStore.getItemAsync(localStorageKey);
-      if (res) {
-        const state = JSON.parse(res);
-        return state;
-      }
+      const res = await SecureStore.getItemAsync(localStorageKey);
+      if (res) return JSON.parse(res);
     } catch (error) {
       console.warn("Cannot get from local storage", error);
     }
   }
 
+  /** Drop the session but keep what the person saved, so they carry on as a guest. */
+  function endSession(keepSaved = true) {
+    authenticated.current = false;
+    authPromise.current = null;
+    const user = stateRef.current.user;
+    setState({
+      user: guestUser(keepSaved ? user?.bookmarks : [], keepSaved ? user?.collections : []),
+    });
+  }
+
   const updateUser = useCallback(
-    async (user: Partial<User>) => {
-      user = _.omit(user, ["_id", "createdAt"]);
-      var newUser: User;
-      if (state.user?._id && state.token) {
-        newUser = await feathers.service("users").patch(state.user._id, user);
-        console.log(`patched result`, user);
+    async (changes: Partial<User>) => {
+      changes = _.omit(changes, ["_id", "createdAt", "email", "password", "verified"]);
+      const { user, token } = stateRef.current;
+      if (user?._id && token) {
+        const updated: User = await feathers.service("users").patch(user._id, changes);
+        setState((s) => ({ ...s, user: updated }));
+      } else {
+        setState((s) => ({ ...s, user: { ...(s.user as User), ...changes } }));
       }
-      setState((state) => ({ ...state, user: newUser ?? state.user }));
     },
-    [state, setState]
+    [feathers]
   );
 
   function handleFeathers() {
     if (feathers.io) {
       feathers.io.on("disconnect", () => {
         const promise = new Promise((resolve) => feathers.io!.once("connect", () => resolve(undefined))).then(() =>
-          authenticated.current ? reAuthentication(true) : null
+          authenticated.current ? reAuthentication(true).catch(() => {}) : null
         );
         authPromise.current = promise;
       });
     }
 
     feathers.post = async function (url: string, data: any, params: any) {
-      const accessToken = state.token ?? (await fromStorage())?.token;
+      const accessToken = stateRef.current.token ?? (await fromStorage())?.token;
       return fetch(`${feathers.apiURL}/${url}`, {
         method: "POST",
         body: data,
         ...params,
         headers: {
-          Authorization: `Bearer ${accessToken}`,
-          ...(params.headers || {}),
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          ...(params?.headers || {}),
         },
       });
     };
@@ -150,83 +188,152 @@ export function AuthProvider({ children, fallback }: Props) {
         async all(hook) {
           if (hook.path === "authentication" || hook.params?.noAuthCheck) return;
           if (!authenticated.current) {
-            await reAuthentication();
+            await reAuthentication().catch(() => {});
           }
         },
       },
     });
   }
 
+  /** Authenticate the socket and adopt the account the server returns. */
   const authentication = useCallback(
     async (req: AuthRequest) => {
       const promise = feathers
         .service("authentication")
         .create(req)
-        .then((res) => {
-          let token: string;
-          let user: User;
-          if (res.accessToken) {
-            token = res.accessToken;
-          }
-          if (res.user) {
-            user = res.user;
-          }
+        .then((res: any) => {
           authenticated.current = true;
-
-          setState((state) => ({ token, user: { ...state.user, ...user } }));
+          setState({ token: res.accessToken, user: res.user });
         });
       authPromise.current = promise;
       return promise;
     },
-    [state, setState]
+    [feathers]
   );
 
-  const login = useCallback(
-    async function login({ strategy = "local", email, password }: AuthProps) {
-      await authentication({ strategy, email, password });
-    },
-    [authentication]
-  );
-
-  const reAuthentication = async (force: boolean = false) => {
+  const reAuthentication = async (force: boolean = false, token?: string) => {
     if (!authPromise.current || force) {
-      let oldToken = state.token;
-      if (!oldToken) {
-        const res = await fromStorage();
-        oldToken = res?.token;
-      }
-      if (!oldToken) {
-        console.log(`No access token stored in localStorage`);
-        return;
-      }
+      const oldToken = token ?? stateRef.current.token ?? (await fromStorage())?.token;
+      if (!oldToken) return;
       try {
-        return authentication({ strategy: "jwt", accessToken: oldToken });
+        await authentication({ strategy: "jwt", accessToken: oldToken });
       } catch (error) {
-        console.warn("fail re-authentication");
+        if (isSessionEnded(error)) endSession();
+        throw error;
       }
+      return;
     }
     return authPromise.current;
   };
 
+  /** Bring favourites saved as a guest into the account that just signed in. */
+  async function mergeGuestData(guest: User | undefined) {
+    if (!guest || guest._id) return;
+    const { user } = stateRef.current;
+    if (!user?._id) return;
+    const bookmarks = union(user.bookmarks, guest.bookmarks);
+    const collections = union(user.collections, guest.collections);
+    if (bookmarks.length === (user.bookmarks?.length ?? 0) && collections.length === (user.collections?.length ?? 0)) return;
+    try {
+      const updated: User = await feathers.service("users").patch(user._id, { bookmarks, collections });
+      setState((s) => ({ ...s, user: updated }));
+    } catch (error) {
+      console.warn("Could not merge guest favourites", error);
+    }
+  }
+
+  const login = useCallback(
+    async function login({ strategy = "local", email, password }: AuthProps) {
+      const guest = stateRef.current.user;
+      await authentication({ strategy, email: email.trim(), password });
+      await mergeGuestData(guest);
+    },
+    [authentication]
+  );
+
   async function register(newUser: Partial<User>) {
-    await feathers.service("users").create(newUser);
+    const guest = stateRef.current.user;
+    await feathers.service("users").create({
+      ...newUser,
+      language,
+      bookmarks: guest?._id ? [] : guest?.bookmarks ?? [],
+      collections: guest?._id ? [] : guest?.collections ?? [],
+    });
   }
 
   const logout = useCallback(
     async function logout() {
-      console.log("logout called");
-      const authRes = await feathers.service("authentication").remove(null);
+      let authRes: any = true;
+      try {
+        authRes = await feathers.service("authentication").remove(null);
+      } catch (error) {
+        console.warn("logout", error);
+      }
       authPromise.current = null;
       authenticated.current = false;
-
-      setState({});
+      setState({ user: guestUser() });
       const deleteSuccess = await localDelete();
-      return authRes && deleteSuccess;
+      return !!authRes && deleteSuccess;
     },
-    [state, setState]
+    [feathers]
   );
 
-  return <AuthStore.Provider value={{ user: state.user, updateUser, login, logout, register }}>{children}</AuthStore.Provider>;
+  async function verifyEmail(code: string) {
+    const res = await feathers.service("account").create({ action: "verifyEmail", code: code.replace(/\s+/g, "") });
+    if (res?.user) setState((s) => ({ ...s, user: res.user }));
+  }
+
+  async function resendVerification() {
+    await feathers.service("account").create({ action: "resendVerification" });
+  }
+
+  async function forgotPassword(email: string) {
+    await feathers.service("account").create({ action: "forgotPassword", email: email.trim() }, { noAuthCheck: true } as any);
+  }
+
+  async function resetPassword(email: string, code: string, password: string) {
+    await feathers.service("account").create({ action: "resetPassword", email: email.trim(), code: code.replace(/\s+/g, ""), password }, { noAuthCheck: true } as any);
+    await login({ email, password });
+  }
+
+  async function changePassword(currentPassword: string, password: string) {
+    const res = await feathers.service("account").create({ action: "changePassword", currentPassword, password });
+    // Other sessions end; switch this one to the fresh token the server issued.
+    if (res?.accessToken) await authentication({ strategy: "jwt", accessToken: res.accessToken });
+  }
+
+  async function deleteAccount() {
+    const id = stateRef.current.user?._id;
+    if (!id) return;
+    await feathers.service("users").remove(id);
+    authPromise.current = null;
+    authenticated.current = false;
+    try {
+      await feathers.service("authentication").remove(null);
+    } catch {}
+    endSession(false);
+    await localDelete();
+  }
+
+  return (
+    <AuthStore.Provider
+      value={{
+        user: state.user,
+        updateUser,
+        login,
+        logout,
+        register,
+        verifyEmail,
+        resendVerification,
+        forgotPassword,
+        resetPassword,
+        changePassword,
+        deleteAccount,
+      }}
+    >
+      {children}
+    </AuthStore.Provider>
+  );
 }
 
 export function useAuth() {
