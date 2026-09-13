@@ -126,6 +126,9 @@ export const ru: Translations = {
     editProfile: "Редактировать профиль",
     signOut: "Выйти",
     helpAndFeedback: "Помощь и обратная связь",
+    privacyPolicy: "Политика конфиденциальности",
+    arcoreNotice:
+      "Это приложение работает на базе сервисов Google Play для AR (ARCore), которые предоставляются Google и регулируются Политикой конфиденциальности Google.",
     basicInformation: "Основная информация",
     name: "Имя",
     birthday: "День рождения",

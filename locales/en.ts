@@ -123,6 +123,9 @@ export const en = {
     editProfile: "Edit Profile",
     signOut: "Sign out",
     helpAndFeedback: "Help and feedback",
+    privacyPolicy: "Privacy policy",
+    arcoreNotice:
+      "This application runs on Google Play Services for AR (ARCore), which is provided by Google and governed by the Google Privacy Policy.",
     basicInformation: "Basic Information",
     name: "Name",
     birthday: "Birthday",

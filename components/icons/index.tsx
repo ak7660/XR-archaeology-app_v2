@@ -38,6 +38,7 @@ export { default as SuccessCircleIcon } from "@assets/icons/success-circle.svg";
 export { default as TimeIcon } from "@assets/icons/time.svg";
 export { default as TimeOutlineIcon } from "@assets/icons/time-outline.svg";
 export { default as LanguageIcon } from "@assets/icons/language.svg";
+export { default as PrivacyIcon } from "@assets/icons/privacy.svg";
 
 
 import { ViewProps } from "react-native";
