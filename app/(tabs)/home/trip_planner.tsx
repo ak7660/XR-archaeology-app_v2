@@ -2,8 +2,13 @@ import { Routes } from "@/app/composable/routes";
 import { useAppStore } from "@/app/state/app";
 import { AppBar, MainBody, NAVBAR_HEIGHT } from "@/components";
 import { useAppTheme } from "@/providers/style_provider";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState, useRef, useEffect } from "react";
+import { useFeathers } from "@/providers/feathers_provider";
+import { useAuth } from "@/providers/auth_provider";
+import { useLanguage } from "@/providers/language_provider";
+import { useTranslation } from "@/hooks/useTranslation";
+import { planReady, SavedPlan } from "@/app/composable/trip_plans";
 import { ScrollView, StyleSheet, View, KeyboardAvoidingView, Platform, TouchableOpacity, Modal, FlatList } from "react-native";
 import { TextInput, Text, ActivityIndicator, IconButton, Chip, Button, Card, Searchbar } from "react-native-paper";
 import { observer } from "mobx-react-lite";
@@ -46,7 +51,16 @@ interface ChatResponse {
 const TripPlannerPage = observer(() => {
   const { theme } = useAppTheme();
   const appStore = useAppStore();
+  const feathers = useFeathers();
+  const { user } = useAuth();
+  const signedIn = !!user?._id;
+  const { language } = useLanguage();
+  const { t } = useTranslation();
+  /** Set when opened from "My trip plans": the saved conversation to continue. */
+  const { plan: savedPlanId } = useLocalSearchParams<{ plan?: string }>();
   const scrollViewRef = useRef<ScrollView>(null);
+  // Read inside sendMessage, which can run right after a reset - state would be stale there.
+  const conversationIdRef = useRef<string | null>(null);
   
   // Chat state
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -59,12 +73,47 @@ const TripPlannerPage = observer(() => {
   const [selectedDestLocation, setSelectedDestLocation] = useState<Location | null>(null);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [locationSearchQuery, setLocationSearchQuery] = useState("");
-  const [language] = useState("en"); // Could be changed based on app language settings
-
-  // Initialize conversation on mount
+  // Open the saved plan, or start a new conversation.
   useEffect(() => {
+    if (savedPlanId) openSavedPlan(savedPlanId);
+    else startNewPlan();
+  }, [savedPlanId]);
+
+  const setConversation = (id: string | null) => {
+    conversationIdRef.current = id;
+    setConversationId(id);
+    if (id) appStore.setConversationId(id);
+    else appStore.clearConversationId();
+  };
+
+  const startNewPlan = () => {
+    setMessages([]);
+    setConversation(null);
+    setCurrentStage("greeting");
+    setAvailableLocations([]);
+    appStore.clearTripPlan();
     sendInitialMessage();
-  }, []);
+  };
+
+  /** Reload a saved conversation: its transcript, stage and itinerary, ready to carry on. */
+  const openSavedPlan = async (id: string) => {
+    setIsLoading(true);
+    try {
+      const saved: SavedPlan = await feathers.service("plannerConversations").get(id);
+      setMessages(
+        (saved.messages || []).map((m) => ({ role: m.role, content: m.content, timestamp: m.at ? new Date(m.at) : new Date() }))
+      );
+      setConversation(saved.conversationId || null);
+      setCurrentStage(saved.stage || "greeting");
+      if (saved.tripPlan) appStore.setTripPlan(saved.tripPlan);
+      else appStore.clearTripPlan();
+    } catch (error) {
+      console.warn("open saved plan", error);
+      setMessages([{ role: "assistant", content: t("tripPlans.loadFailed"), timestamp: new Date() }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -95,102 +144,39 @@ const TripPlannerPage = observer(() => {
     setIsLoading(true);
 
     try {
-      const apiUrl = process.env.EXPO_PUBLIC_TRIP_PLAN_API_URL!.replace("/trip/plan", "/chat/message");
-      const requestBody: any = {
+      // Through our server, which relays to the AI service and, when signed in,
+      // saves the conversation to "My trip plans".
+      const data: ChatResponse = await feathers.service("planner").create({
         message,
+        conversationId: conversationIdRef.current || undefined,
         language,
-      };
-
-      if (conversationId) {
-        requestBody.conversation_id = conversationId;
-      }
-
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-Key": process.env.EXPO_PUBLIC_TRIP_PLAN_API_KEY!,
-        },
-        body: JSON.stringify(requestBody),
+        hidden: isInitial,
       });
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      const data: ChatResponse = await response.json();
-      
-      console.log("=== API Response ===");
-      console.log("Stage:", data.stage);
-      console.log("Available locations:", data.available_locations?.length || 0);
-      console.log("First location:", data.available_locations?.[0]);
-      console.log("Message length:", data.message.length);
-      console.log("Message preview:", data.message.substring(0, 200));
-      console.log("Has trip_plan field:", !!data.trip_plan);
-      if (data.trip_plan) {
-        console.log("trip_plan length:", data.trip_plan.length);
-        console.log("trip_plan preview:", data.trip_plan.substring(0, 200));
-      }
-
-      // Store conversation ID
-      if (data.conversation_id) {
-        setConversationId(data.conversation_id);
-        appStore.setConversationId(data.conversation_id);
-      }
-
-      // Update current stage
+      if (data.conversation_id) setConversation(data.conversation_id);
       setCurrentStage(data.stage);
 
-      // Handle available locations - check if we're in the right stage and have locations
       if (data.stage === "collecting_locations" && data.available_locations && data.available_locations.length > 0) {
-        console.log("✓ Stage is collecting_locations and we have", data.available_locations.length, "locations");
-        console.log("✓ Setting available locations and showing modal");
         setAvailableLocations(data.available_locations);
-        
-        // Use setTimeout to ensure state is updated before showing modal
-        setTimeout(() => {
-          console.log("✓ Opening modal now");
-          setShowLocationModal(true);
-        }, 100);
-      } else {
-        console.log("✗ Not showing modal - Stage:", data.stage, "Locations:", data.available_locations?.length || 0);
+        // Let the state settle before the modal opens.
+        setTimeout(() => setShowLocationModal(true), 100);
       }
 
-      // Add assistant response
-      const assistantMessage: ChatMessage = {
-        role: "assistant",
-        content: data.message,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
+      setMessages((prev) => [...prev, { role: "assistant", content: data.message, timestamp: new Date() }]);
 
-      // Store trip plan - during refinement, the updated plan is in message field
+      // While refining, the revised plan arrives in the message itself.
       if (data.stage === "refining_plan" && data.message.includes("#")) {
-        // During refinement, the latest plan is in the message field
-        console.log("=== REFINED PLAN IN MESSAGE (refining_plan stage) ===");
-        console.log("Message length:", data.message.length);
-        console.log("First 300 chars:", data.message.substring(0, 300));
-        console.log("Storing message as tripPlan...");
         appStore.setTripPlan(data.message);
-        console.log("Stored! appStore.tripPlan length:", appStore.tripPlan.length);
       } else if (data.trip_plan) {
-        // Initial generation or other stages - use trip_plan field
-        console.log("=== NEW TRIP PLAN RECEIVED (from trip_plan field) ===");
-        console.log("Trip plan length:", data.trip_plan.length);
-        console.log("First 300 chars:", data.trip_plan.substring(0, 300));
-        console.log("Storing in appStore...");
         appStore.setTripPlan(data.trip_plan);
-        console.log("Stored! appStore.tripPlan length:", appStore.tripPlan.length);
-        console.log("First 200 chars from store:", appStore.tripPlan.substring(0, 200));
-      } else {
-        console.log("No trip_plan in response, stage:", data.stage);
       }
-
-    } catch (error) {
-      console.error("Error sending message:", error);
+    } catch (error: any) {
+      console.warn("Error sending message:", error);
+      // Busy/limit/validation messages from the server are written for people; show those as they are.
+      const readable = [400, 429, 503].includes(error?.code) && error?.message;
       const errorMessage: ChatMessage = {
         role: "assistant",
-        content: "Sorry, I encountered an error. Please try again.",
+        content: readable || "Sorry, I encountered an error. Please try again.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -568,12 +554,39 @@ const TripPlannerPage = observer(() => {
     selectionCard: {
       marginBottom: theme.spacing.sm,
     },
+    guestHint: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingLeft: theme.spacing.md,
+      paddingRight: theme.spacing.xs,
+      paddingVertical: theme.spacing.xxs,
+      backgroundColor: theme.colors.primary + "14",
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.primary + "33",
+    },
   });
 
   return (
     <MainBody padding={{ top: 0, bottom: 0 }}>
       <View style={styles.pageContainer}>
-        <AppBar title="AI Trip Planner" showBack />
+        <AppBar
+          title="AI Trip Planner"
+          showBack
+          actions={[
+            ...(messages.length > 1 && !isLoading ? [{ icon: "plus", onPress: startNewPlan, accessibilityLabel: t("tripPlans.newPlan") }] : []),
+            ...(signedIn ? [{ icon: "history", onPress: () => router.push(Routes.TripPlans), accessibilityLabel: t("tripPlans.title") }] : []),
+          ]}
+        />
+        {!signedIn && (
+          <View style={styles.guestHint}>
+            <Text variant="bodySmall" style={{ color: theme.colors.text, flex: 1 }}>
+              {t("tripPlans.signInHint")}
+            </Text>
+            <Button mode="text" compact onPress={() => router.push(Routes.Login)}>
+              {t("tripPlans.signIn")}
+            </Button>
+          </View>
+        )}
         <KeyboardAvoidingView
           style={styles.container}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -609,7 +622,7 @@ const TripPlannerPage = observer(() => {
             </View>
           )}
 
-          {appStore.tripPlan && (currentStage === "refining_plan" || currentStage === "generating_plan") && (
+          {appStore.tripPlan && planReady(currentStage) && (
             <TouchableOpacity
               style={[styles.viewPlanButton, { backgroundColor: theme.colors.primary, padding: theme.spacing.md }]}
               onPress={handleViewPlan}

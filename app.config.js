@@ -13,8 +13,6 @@ module.exports = {
       // Explicitly pass environment variables to the app
       EXPO_PUBLIC_API_URL: process.env.EXPO_PUBLIC_API_URL,
       EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
-      EXPO_PUBLIC_TRIP_PLAN_API_URL: process.env.EXPO_PUBLIC_TRIP_PLAN_API_URL,
-      EXPO_PUBLIC_TRIP_PLAN_API_KEY: process.env.EXPO_PUBLIC_TRIP_PLAN_API_KEY,
       EXPO_PUBLIC_PREFIX: process.env.EXPO_PUBLIC_PREFIX || "",
     },
     android: {

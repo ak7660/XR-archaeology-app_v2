@@ -10,6 +10,8 @@ export enum Routes {
   VerifyEmail = '/verify_email',
   ForgotPassword = '/forgot_password',
   ChangePassword = '/account/change_password',
+  MyBookings = '/account/bookings',
+  TripPlans = '/account/trip_plans',
   Home = '/home',
   Account = '/account',
   Profile = '/account/profile',

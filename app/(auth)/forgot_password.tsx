@@ -2,18 +2,19 @@ import { AppBar, Form, MainBody } from "@components";
 import { useState } from "react";
 import { ScrollView } from "react-native";
 import { Button, Text } from "react-native-paper";
-import { router } from "expo-router";
 import { useAuth } from "@providers/auth_provider";
 import { useAppTheme } from "@providers/style_provider";
 import { useTranslation } from "@/hooks/useTranslation";
 import * as rules from "@/plugins/rules";
 import { describeAuthError, fill } from "../composable/auth_errors";
+import { useLeaveAuthFlow } from "../composable/auth_flow";
 
 /** Two steps on one screen: ask for a code by email, then set a new password with it. */
 export default function ForgotPasswordPage() {
   const { theme } = useAppTheme();
   const { t } = useTranslation();
   const { forgotPassword, resetPassword } = useAuth();
+  const leaveAuthFlow = useLeaveAuthFlow();
 
   const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
@@ -42,7 +43,7 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     try {
       await resetPassword(email, code, password);
-      router.replace("/");
+      leaveAuthFlow();
     } catch (error) {
       setErrorMsg(describeAuthError(error, t, "code"));
     } finally {

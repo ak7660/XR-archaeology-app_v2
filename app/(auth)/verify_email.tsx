@@ -2,11 +2,11 @@ import { AppBar, Form, MainBody } from "@components";
 import { useEffect, useState } from "react";
 import { ScrollView, View } from "react-native";
 import { Button, Text } from "react-native-paper";
-import { router } from "expo-router";
 import { useAuth } from "@providers/auth_provider";
 import { useAppTheme } from "@providers/style_provider";
 import { useTranslation } from "@/hooks/useTranslation";
 import { describeAuthError, fill } from "../composable/auth_errors";
+import { useLeaveAuthFlow } from "../composable/auth_flow";
 
 const RESEND_SECONDS = 60;
 
@@ -16,6 +16,7 @@ export default function VerifyEmailPage() {
   const { theme } = useAppTheme();
   const { t } = useTranslation();
   const { user, verifyEmail, resendVerification } = useAuth();
+  const leaveAuthFlow = useLeaveAuthFlow();
 
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -31,7 +32,7 @@ export default function VerifyEmailPage() {
   }, [cooldown]);
 
   useEffect(() => {
-    if (user?.verified) router.replace("/");
+    if (user?.verified) leaveAuthFlow();
   }, [user?.verified]);
 
   async function handleConfirm() {
@@ -92,7 +93,7 @@ export default function VerifyEmailPage() {
           <Button mode="text" onPress={handleResend} disabled={cooldown > 0}>
             {cooldown > 0 ? fill(t("auth.resendIn"), { seconds: cooldown }) : t("auth.resendCode")}
           </Button>
-          <Button mode="text" onPress={() => router.replace("/")}>
+          <Button mode="text" onPress={leaveAuthFlow}>
             {t("auth.later")}
           </Button>
         </View>

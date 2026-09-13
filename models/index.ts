@@ -10,3 +10,4 @@ export { Attraction, OpenHour, AttractionType, Weekday, MultilingualText } from 
 export { Storyboard } from "./storyboard";
 export type { StoryboardPage } from "./storyboard";
 export { Event } from "./event";
+export type { Booking, EventAvailability } from "./booking";

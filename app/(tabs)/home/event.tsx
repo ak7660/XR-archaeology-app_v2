@@ -1,16 +1,14 @@
-import { AppBar, Carousel, MainBody, NAVBAR_HEIGHT, NumInput, ErrorPage, LoadingPage } from "@/components";
-import { CalendarIcon, CalendarOutlinedIcon, LocationIcon, ProfileIcon } from "@/components/icons";
+import { AppBar, Carousel, MainBody, NAVBAR_HEIGHT, ErrorPage, LoadingPage } from "@/components";
+import BookingCard from "@/components/events/booking_card";
+import { CalendarIcon, CalendarOutlinedIcon, LocationIcon } from "@/components/icons";
 import { Event } from "@/models";
-import { useAuth } from "@/providers/auth_provider";
 import { useFeathers } from "@/providers/feathers_provider";
 import { useLanguage } from "@/providers/language_provider";
 import { AppTheme, useAppTheme } from "@/providers/style_provider";
-import { router, useLocalSearchParams } from "expo-router";
-import { Routes } from "@/app/composable/routes";
-import moment from "moment";
+import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { Button, Text } from "react-native-paper";
+import { Text } from "react-native-paper";
 import { EVENT_TIMEZONE_LABEL, eventMoment, isEventPast } from "@/app/composable/event_dates";
 
 /** A time is only worth showing if the editor actually set one.
@@ -31,18 +29,12 @@ function hasMeaningfulTime(start?: Date | string, end?: Date | string) {
 export default function Page() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const feathers = useFeathers();
-  const { user } = useAuth();
   const { theme } = useAppTheme();
   const { getLocalizedText } = useLanguage();
 
   const [event, setEvent] = useState<Event>();
   const [venueName, setVenueName] = useState<string>();
   const [loaded, setLoaded] = useState(false);
-  const [adults, setAdults] = useState(1);
-  const [children, setChildren] = useState(0);
-  const [selectedDates, setSelectedDates] = useState([]);
-
-  const authenticated: boolean = !!(user && user._id);
 
   useEffect(() => {
     async function init() {
@@ -209,61 +201,8 @@ export default function Page() {
             </View>
           )}
 
-          {/* Reservation - not offered once the event is over */}
-          {authenticated && !isPast && (
-            <View style={{ marginBottom: theme.spacing.lg }}>
-              <Text variant="titleMedium" style={style.sectionTitle}>
-                Reservation
-              </Text>
-
-              <View style={[style.row, style.personSection]}>
-                <ProfileIcon fill={theme.colors.text} size={24} />
-                <View style={{ flexDirection: "column", gap: theme.spacing.xs, flex: 1 }}>
-                  <View style={style.personRow}>
-                    <Text variant="labelMedium" style={{ color: theme.colors.text }}>
-                      Adults
-                    </Text>
-                    <NumInput inputValue={adults} onChange={setAdults} min={0} />
-                  </View>
-                  <View style={style.personRow}>
-                    <View style={{ flexDirection: "column" }}>
-                      <Text variant="labelMedium" style={{ color: theme.colors.text }}>
-                        Children
-                      </Text>
-                      <Text variant="bodySmall" style={{ color: theme.colors.grey2 }}>
-                        Ages 0 to 17
-                      </Text>
-                    </View>
-                    <NumInput inputValue={children} onChange={setChildren} min={0} />
-                  </View>
-                </View>
-              </View>
-
-              {/* Date & Time */}
-              <View style={[style.row, style.dateTimeSection]}>
-                <CalendarOutlinedIcon fill={theme.colors.text} size={24} />
-                <Text variant="labelMedium" style={{ color: theme.colors.text, flex: 1 }}>
-                  Date & Time
-                </Text>
-                <Button>{selectedDates && selectedDates.length ? moment(selectedDates[0]).format("DD MMM, YYYY") : "Select a day"}</Button>
-              </View>
-            </View>
-          )}
-
-          {/* Footer - no booking or sign-up for an event that has already happened */}
-          {!isPast && (
-            <View style={style.footer}>
-              <Button
-                mode="contained"
-                style={{ borderRadius: theme.borderRadius.sm }}
-                contentStyle={{ paddingVertical: theme.spacing.xxs }}
-                textColor={theme.colors.textOnPrimary}
-                onPress={authenticated ? undefined : () => router.push(Routes.Login)}
-              >
-                {authenticated ? "Book now" : "Sign up to book now"}
-              </Button>
-            </View>
-          )}
+          {/* Booking - not offered once the event is over */}
+          {!isPast && <BookingCard event={event} />}
         </ScrollView>
       ) : (
         <ErrorPage message="Details for this item aren't available" />
@@ -343,29 +282,5 @@ const useStyle = ({ theme, past = false }: { theme: AppTheme; past?: boolean }) 
     contentSection: {
       paddingHorizontal: theme.spacing.lg,
       marginBottom: theme.spacing.lg,
-    },
-    sectionTitle: {
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.xs,
-      color: theme.colors.text,
-    },
-    row: {
-      flexDirection: "row",
-      alignItems: "center",
-    },
-    personSection: {
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.sm,
-      columnGap: theme.spacing.sm,
-    },
-    personRow: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-    dateTimeSection: {
-      paddingLeft: theme.spacing.lg,
-      paddingRight: theme.spacing.xxs,
-      columnGap: theme.spacing.sm,
-    },
-    footer: {
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.lg,
     },
   });
