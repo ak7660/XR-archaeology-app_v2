@@ -20,7 +20,7 @@ function CollectionPage() {
     async function syncData() {
       if (!user?.collections) return;
       const chunks = _.chunk(user.collections, 20);
-      const resps = await Promise.all(_.map(chunks, (chunk) => feathers.service("artifact").find({ query: { _id: { $in: chunk }, $limit: 100 } })));
+      const resps = await Promise.all(_.map(chunks, (chunk) => feathers.service("artifacts").find({ query: { _id: { $in: chunk }, $limit: 100 } })));
       const result = _.flatten(_.map(resps, (resp) => resp.data));
       setCollection(result);
     }

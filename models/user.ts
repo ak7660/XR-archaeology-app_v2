@@ -12,4 +12,13 @@ export class User {
 
   bookmarks?: string[];
   collections?: string[];
+
+  /** Email address confirmed with the emailed code. */
+  verified?: boolean;
+  /** App language, so account emails arrive in it. */
+  language?: "en" | "hy" | "ru";
+  /** How the person signs in: "local" (email + password) and/or "google". */
+  providers?: string[];
+  avatar?: string;
+  lastLoginAt?: Date;
 }

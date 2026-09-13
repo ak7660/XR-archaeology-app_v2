@@ -4,7 +4,10 @@ import { useAuth } from "@providers/auth_provider";
 import { useTranslation } from "@/hooks/useTranslation";
 import moment from "moment";
 import { useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { router } from "expo-router";
+import { Routes } from "@/app/composable/routes";
+import { describeAuthError } from "@/app/composable/auth_errors";
 import { Button, Text } from "react-native-paper";
 import * as rules from "@/plugins/rules";
 import { SuccessCircleIcon } from "@/components/icons";
@@ -13,7 +16,8 @@ export default function Page() {
   const { theme } = useAppTheme();
   const style = useStyle({ theme });
   const { t } = useTranslation();
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, deleteAccount } = useAuth();
+  const [deleting, setDeleting] = useState(false);
   const [editing, setEditing] = useState(false);
 
   const [firstName, setFirstName] = useState(user?.firstName || "");
@@ -21,7 +25,6 @@ export default function Page() {
   const [username, setUsername] = useState(user?.username || "");
   const [dob, setDob] = useState(user?.dob ? moment(user.dob).format("DD/MM/YYYY") : "");
 
-  const [email, setEmail] = useState(user?.email || "");
 
   const [areaCode, setAreaCode] = useState<number | undefined>(user?.phone ? Number(user.phone.split(" ")[0]?.substring(1)) : undefined);
   const [phone, setPhone] = useState<string>(user?.phone ? user.phone.split(" ")[1] : "");
@@ -38,7 +41,7 @@ export default function Page() {
       try {
         const birthday = dob.length ? moment(dob, "DD/MM/YYYY").toDate() : undefined;
         const contactNum = !!areaCode && !!phone ? `+${areaCode} ${phone}` : undefined;
-        await updateUser({ firstName, lastName, username, email, dob: birthday, phone: contactNum });
+        await updateUser({ firstName, lastName, username, dob: birthday, phone: contactNum });
 
         setSuccess(true);
         setLoading(false);
@@ -54,6 +57,27 @@ export default function Page() {
       setEditing(true);
       setSuccess(false);
     }
+  }
+
+  function confirmDelete() {
+    Alert.alert(t("auth.deleteTitle"), t("auth.deleteMessage"), [
+      { text: t("auth.cancel"), style: "cancel" },
+      {
+        text: t("auth.deleteConfirm"),
+        style: "destructive",
+        onPress: async () => {
+          setDeleting(true);
+          try {
+            await deleteAccount();
+            router.replace("/");
+          } catch (error) {
+            Alert.alert(t("auth.deleteAccount"), describeAuthError(error, t));
+          } finally {
+            setDeleting(false);
+          }
+        },
+      },
+    ]);
   }
 
   return (
@@ -109,6 +133,7 @@ export default function Page() {
                   textColor={theme.colors.textOnPrimary}
                   style={style.button}
                   labelStyle={{ marginHorizontal: theme.spacing.sm, marginVertical: theme.spacing.xxs }}
+                  onPress={() => router.push(Routes.ChangePassword)}
                 >
                   {t("profile.changePassword")}
                 </Button>
@@ -126,6 +151,16 @@ export default function Page() {
                   {user?.email}
                 </Text>
               </View>
+              <View style={[style.row, { justifyContent: "space-between" }]}>
+                <Text variant="bodySmall" style={{ color: user?.verified ? theme.colors.grey2 : theme.colors.error }}>
+                  {user?.verified ? t("auth.verified") : t("auth.notVerified")}
+                </Text>
+                {!user?.verified && (
+                  <Button mode="text" compact onPress={() => router.push(Routes.VerifyEmail)}>
+                    {t("auth.confirmNow")}
+                  </Button>
+                )}
+              </View>
               <View style={style.row}>
                 <Text variant="labelMedium" style={{ color: theme.colors.text }}>
                   {t("profile.phone")}
@@ -135,6 +170,16 @@ export default function Page() {
                 </Text>
               </View>
             </View>
+            <Button
+              mode="text"
+              textColor={theme.colors.error}
+              style={{ alignSelf: "flex-start", marginTop: theme.spacing.xl }}
+              onPress={confirmDelete}
+              loading={deleting}
+              disabled={deleting}
+            >
+              {t("auth.deleteAccount")}
+            </Button>
           </>
         ) : (
           <>
@@ -150,8 +195,7 @@ export default function Page() {
                 {
                   value: lastName,
                   onChange: setLastName,
-                  validator: rules.required,
-                  label: `${t("profile.lastName")}*`,
+                  label: t("profile.lastName"),
                 },
                 {
                   value: username,
@@ -170,13 +214,6 @@ export default function Page() {
                   maxLength: 10,
                 },
 
-                {
-                  value: email,
-                  onChange: setEmail,
-                  validator: [rules.required, rules.email],
-                  label: `${t("profile.email")}*`,
-                  keyboardType: "email-address",
-                },
                 {
                   inner: [
                     {
@@ -227,7 +264,8 @@ const useStyle = ({ theme }: { theme: AppTheme }) =>
   StyleSheet.create({
     scrollView: {
       paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.xl,
+      paddingTop: theme.spacing.xl,
+      paddingBottom: NAVBAR_HEIGHT + 120,
       flexGrow: 1,
     },
     footer: {

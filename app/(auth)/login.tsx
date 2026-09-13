@@ -1,7 +1,7 @@
 import { Button, Text } from "react-native-paper";
 import { MainBody, Form, AppBar } from "@components";
 import { useState } from "react";
-import { Link, router } from "expo-router";
+import { router } from "expo-router";
 import { StyleSheet, View } from "react-native";
 import _ from "lodash";
 import { useAuth } from "@providers/auth_provider";
@@ -9,6 +9,7 @@ import { useAppTheme, AppTheme } from "@providers/style_provider";
 import { useTranslation } from "@/hooks/useTranslation";
 import * as rules from "@/plugins/rules";
 import { Routes } from "../composable/routes";
+import { describeAuthError } from "../composable/auth_errors";
 
 export default function LoginPage() {
   const { theme } = useAppTheme();
@@ -30,8 +31,7 @@ export default function LoginPage() {
       await login({ email, password });
       router.replace("/");
     } catch (error) {
-      console.log(error);
-      setErrorMsg(`${error}`);
+      setErrorMsg(describeAuthError(error, t, "login"));
     } finally {
       setLoading(false);
     }
@@ -57,13 +57,16 @@ export default function LoginPage() {
               validator: [rules.required, rules.email],
               label: t("auth.email"),
               keyboardType: "email-address",
+              autoCapitalize: "none",
+              autoComplete: "email",
             },
             {
               value: password,
               onChange: setPassword,
               validator: [rules.required, rules.password],
               label: t("auth.password"),
-              keyboardType: "visible-password",
+              secure: true,
+              autoComplete: "password",
             },
           ]}
         />
@@ -71,11 +74,11 @@ export default function LoginPage() {
           <Text variant="bodyMedium" style={{ color: theme.colors.text }}>
             {t("auth.forgotPassword")}
           </Text>
-          <Link href={"/register"} style={{ color: theme.colors.grey1, paddingVertical: theme.spacing.xs }}>
+          <Button mode="text" compact onPress={() => router.push(Routes.ForgotPassword)}>
             <Text variant="labelMedium" style={{ color: theme.colors.primary }}>
               {t("auth.resetPassword")}
             </Text>
-          </Link>
+          </Button>
         </View>
 
         <View style={{ height: theme.spacing.xl }} />

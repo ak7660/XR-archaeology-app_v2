@@ -8,7 +8,7 @@
       },
       "ios": {},
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://xr-archaeology-server-production.up.railway.app",
+        "EXPO_PUBLIC_API_URL": "https://app-api.veditourism.com",
         "EXPO_PUBLIC_PREFIX": "",
         "EXPO_PUBLIC_TRIP_PLAN_API_URL": "https://xr-archaeology-ai-production.up.railway.app/trip/plan"
       }
@@ -20,7 +20,7 @@
       },
       "ios": {},
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://xr-archaeology-server-production.up.railway.app",
+        "EXPO_PUBLIC_API_URL": "https://app-api.veditourism.com",
         "EXPO_PUBLIC_PREFIX": "",
         "EXPO_PUBLIC_TRIP_PLAN_API_URL": "https://xr-archaeology-ai-production.up.railway.app/trip/plan"
       }
@@ -32,7 +32,7 @@
       },
       "ios": {},
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://xr-archaeology-server-production.up.railway.app",
+        "EXPO_PUBLIC_API_URL": "https://app-api.veditourism.com",
         "EXPO_PUBLIC_PREFIX": "",
         "EXPO_PUBLIC_TRIP_PLAN_API_URL": "https://xr-archaeology-ai-production.up.railway.app/trip/plan"
       }
