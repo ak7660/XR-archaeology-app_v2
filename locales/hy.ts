@@ -124,6 +124,9 @@ export const hy: Translations = {
     editProfile: "Խմբագրել պրոֆիլը",
     signOut: "Դուրս գալ",
     helpAndFeedback: "Օգնություն և կարծիք",
+    privacyPolicy: "Գաղտնիության քաղաքականություն",
+    arcoreNotice:
+      "Այս հավելվածն աշխատում է Google Play Services for AR (ARCore) ծառայության վրա, որը տրամադրվում է Google-ի կողմից և կարգավորվում է Google-ի Գաղտնիության քաղաքականությամբ։",
     basicInformation: "Հիմնական տեղեկություններ",
     name: "Անուն",
     birthday: "Ծննդյան օր",

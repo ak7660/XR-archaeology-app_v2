@@ -1,11 +1,12 @@
 import { Routes } from "@/app/composable/routes";
+import { PRIVACY_POLICY_URL } from "@/app/composable/links";
 import { AccountListItem, MainBody } from "@/components";
 import { useAuth } from "@/providers/auth_provider";
 import { useAppTheme, AppTheme } from "@/providers/style_provider";
 import { useTranslation } from "@/hooks/useTranslation";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { Linking, ScrollView, StyleSheet, View } from "react-native";
 import { Button, Text } from "react-native-paper";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -52,6 +53,7 @@ export default function SettingsPage() {
           <AccountListItem label={t("profile.settings")} prefix="setting" onPress={() => router.push(Routes.Settings)} />
           <AccountListItem label={t("profile.helpAndFeedback")} prefix="help" onPress={() => router.push(Routes.HelpFeedback)} />
           <AccountListItem label={t("language.title")} prefix="language" onPress={() => router.push(Routes.Language)} />
+          <AccountListItem label={t("profile.privacyPolicy")} prefix="privacy" onPress={() => Linking.openURL(PRIVACY_POLICY_URL)} />
         </View>
         <View style={{ padding: theme.spacing.lg }}>
           <Button
@@ -65,6 +67,10 @@ export default function SettingsPage() {
             {authenticated ? t("profile.signOut") : t("auth.login")}
           </Button>
         </View>
+        {/* Google requires AR apps to show this notice where users can easily find it. */}
+        <Text variant="bodySmall" style={style.notice}>
+          {t("profile.arcoreNotice")}
+        </Text>
       </ScrollView>
     </MainBody>
   );
@@ -87,5 +93,10 @@ const useStyle = ({ theme, statusBarHeight }: { theme: AppTheme; statusBarHeight
     },
     button: {
       borderRadius: theme.borderRadius.xs,
+    },
+    notice: {
+      color: theme.colors.grey2,
+      paddingHorizontal: theme.spacing.lg,
+      paddingBottom: theme.spacing.lg,
     },
   });
