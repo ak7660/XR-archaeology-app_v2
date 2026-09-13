@@ -11,6 +11,11 @@ export class Event extends Model {
   startDate: Date;
   endDate: Date;
 
+  /** Whether visitors can book a place in the app (missing means yes). */
+  bookingEnabled?: boolean;
+  /** Places per day; missing means no limit. */
+  capacity?: number;
+
   order: number;
   latitude?: number;
   longitude?: number;

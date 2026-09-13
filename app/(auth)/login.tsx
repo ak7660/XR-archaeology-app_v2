@@ -10,6 +10,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import * as rules from "@/plugins/rules";
 import { Routes } from "../composable/routes";
 import { describeAuthError } from "../composable/auth_errors";
+import { useLeaveAuthFlow } from "../composable/auth_flow";
 
 export default function LoginPage() {
   const { theme } = useAppTheme();
@@ -17,6 +18,7 @@ export default function LoginPage() {
   const { t } = useTranslation();
 
   const { login } = useAuth();
+  const leaveAuthFlow = useLeaveAuthFlow();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [formValid, setFormValid] = useState(false);
@@ -29,7 +31,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login({ email, password });
-      router.replace("/");
+      leaveAuthFlow();
     } catch (error) {
       setErrorMsg(describeAuthError(error, t, "login"));
     } finally {

@@ -50,6 +50,8 @@ export default function SettingsPage() {
         </View>
         <View style={{ padding: theme.spacing.lg, gap: theme.spacing.md }}>
           {authenticated && <AccountListItem label={t("profile.profile")} prefix="profile" onPress={() => router.push(Routes.Profile)} />}
+          {authenticated && <AccountListItem label={t("profile.myBookings")} prefix="calendar" onPress={() => router.push(Routes.MyBookings)} />}
+          {authenticated && <AccountListItem label={t("profile.myTripPlans")} prefix="compass" onPress={() => router.push(Routes.TripPlans)} />}
           <AccountListItem label={t("profile.settings")} prefix="setting" onPress={() => router.push(Routes.Settings)} />
           <AccountListItem label={t("profile.helpAndFeedback")} prefix="help" onPress={() => router.push(Routes.HelpFeedback)} />
           <AccountListItem label={t("language.title")} prefix="language" onPress={() => router.push(Routes.Language)} />
