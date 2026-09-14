@@ -5,10 +5,12 @@ import * as Location from "expo-location";
 import { Alert, Linking, Platform } from "react-native";
 import * as IntentLauncher from "expo-intent-launcher";
 import { Routes } from "./composable/routes";
+import { useAuth } from "@providers/auth_provider";
 
 export default function App() {
   const rootNav = useRootNavigation();
   const [isNavReady, setNavReady] = useState(false);
+  const { ready, user, guestChosen } = useAuth();
 
   useEffect(() => {
     const unsubscribe = rootNav?.addListener("state", (event) => {
@@ -41,7 +43,7 @@ export default function App() {
     })();
   }, []);
 
-  if (isNavReady) return <Redirect href={Routes.Home} />;
+  if (isNavReady && ready) return <Redirect href={user?._id || guestChosen ? Routes.Home : Routes.Welcome} />;
   else
     return (
       <MainBody>

@@ -46,6 +46,7 @@ const StackLayout = observer(() => {
     <>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(auth)/welcome" />
         <Stack.Screen name="(auth)/login" />
         <Stack.Screen name="(auth)/register" />
         <Stack.Screen name="(auth)/verify_email" />
