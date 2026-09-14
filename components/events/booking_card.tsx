@@ -3,58 +3,57 @@ import { NumInput } from "@/components";
 import { CalendarOutlinedIcon, SuccessCircleIcon } from "@/components/icons";
 import { useAuth } from "@/providers/auth_provider";
 import { useFeathers } from "@/providers/feathers_provider";
+import { useLanguage } from "@/providers/language_provider";
 import { AppTheme, useAppTheme } from "@/providers/style_provider";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Routes } from "@/app/composable/routes";
 import { describeAuthError, fill } from "@/app/composable/auth_errors";
-import { bookButtonLabel, bookingDay, longDay, peopleLabel, placesLeftLabel } from "@/app/composable/bookings";
+import { eventWhenLabel, peopleLabel, placesLeftLabel } from "@/app/composable/bookings";
 import { router } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { Alert, StyleSheet, View } from "react-native";
 import { ActivityIndicator, Button, Text } from "react-native-paper";
 
-const MAX_ADULTS = 10;
-const MAX_CHILDREN = 10;
+const MAX_PEOPLE = 10;
 
 interface Props {
   event: Event;
 }
 
 /**
- * Booking on the event page. One card, whose content follows the visitor:
- * guest -> sign in; unconfirmed email -> confirm; booked -> the booking with a
- * cancel option; otherwise the form (day, people, places left).
+ * Booking on the event page, kept deliberately simple: pick how many people,
+ * tap "Book now", confirm, done. One booking per person per event; once booked
+ * the card shows it with a cancel option.
  *
- * Rules are enforced by the server (XR-archaeology-server server/feathers/bookings.ts);
- * this only avoids offering what would be refused.
+ * Guests are asked to sign in or create an account; unconfirmed emails to
+ * confirm. Rules are enforced by the server (XR-archaeology-server
+ * server/feathers/bookings.ts) - any refusal is shown in its own words.
  */
 export default function BookingCard({ event }: Props) {
   const { theme } = useAppTheme();
   const style = useStyle(theme);
   const { t } = useTranslation();
+  const { getLocalizedText } = useLanguage();
   const feathers = useFeathers();
   const { user } = useAuth();
   const signedIn = !!user?._id;
 
   const [availability, setAvailability] = useState<EventAvailability>();
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
-  const [day, setDay] = useState<string>();
-  const [adults, setAdults] = useState(1);
-  const [children, setChildren] = useState(0);
+  const [people, setPeople] = useState(1);
   const [submitting, setSubmitting] = useState(false);
-  const [showForm, setShowForm] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
   const load = useCallback(async () => {
     try {
-      const av: EventAvailability = await feathers.service("eventAvailability").get(event._id);
-      setAvailability(av);
+      setAvailability(await feathers.service("eventAvailability").get(event._id));
       if (signedIn) {
-        const res = await feathers.service("eventRegistrations").find({ query: { event: event._id, status: { $ne: "cancelled" }, $sort: { day: 1 }, $limit: 20 } });
-        setBookings(Array.isArray(res) ? res : res.data);
+        const res = await feathers.service("eventRegistrations").find({ query: { event: event._id, status: { $ne: "cancelled" }, $limit: 1 } });
+        const list: Booking[] = Array.isArray(res) ? res : res.data;
+        setBooking(list[0] ?? null);
       } else {
-        setBookings([]);
+        setBooking(null);
       }
     } catch (error) {
       console.warn("booking card", error);
@@ -67,42 +66,39 @@ export default function BookingCard({ event }: Props) {
     load();
   }, [load]);
 
-  const bookedDays = useMemo(() => new Set(bookings.map((b) => b.day)), [bookings]);
-  /** Days still open to this visitor: not already booked by them. */
-  const openDays = useMemo(() => (availability?.days ?? []).filter((d) => !bookedDays.has(d.day)), [availability, bookedDays]);
-
-  // Pick the first day that still has room.
-  useEffect(() => {
-    if (!openDays.length) return setDay(undefined);
-    if (!day || !openDays.some((d) => d.day === day)) {
-      setDay((openDays.find((d) => d.left === null || d.left > 0) ?? openDays[0]).day);
-    }
-  }, [openDays]);
-
-  const selected = openDays.find((d) => d.day === day);
-  const people = adults + children;
-  const full = !!selected && selected.left !== null && selected.left <= 0;
-  const tooMany = !!selected && selected.left !== null && people > selected.left;
+  const eventName = getLocalizedText(event.name as any);
+  const left = availability?.left ?? null;
+  const maxPeople = left === null ? MAX_PEOPLE : Math.max(1, Math.min(MAX_PEOPLE, left));
 
   async function book() {
-    if (!selected || submitting || full || tooMany) return;
     setErrorMsg("");
     setSubmitting(true);
     try {
-      await feathers.service("eventRegistrations").create({ event: event._id, day: selected.day, adults, children });
-      setShowForm(false);
-      setAdults(1);
-      setChildren(0);
-      await load();
+      const created: Booking = await feathers.service("eventRegistrations").create({ event: event._id, people: Math.min(people, maxPeople) });
+      setBooking(created);
+      Alert.alert(t("booking.booked"), user?.email ? fill(t("booking.emailed"), { email: user.email }) : undefined);
+      load();
     } catch (error: any) {
-      setErrorMsg(error?.code === 400 || error?.code === 409 ? error.message : describeAuthError(error, t));
+      // The server's refusals ("This event is fully booked.", "Confirm your email...") are written for people.
+      setErrorMsg(error?.code >= 400 && error?.code < 500 && error?.message ? error.message : describeAuthError(error, t));
       load();
     } finally {
       setSubmitting(false);
     }
   }
 
-  function cancel(booking: Booking) {
+  /** "Are you sure?" before anything is saved. */
+  function confirmBooking() {
+    if (submitting) return;
+    const details = [eventName, eventWhenLabel(event), peopleLabel(Math.min(people, maxPeople), t)].filter(Boolean).join("\n");
+    Alert.alert(t("booking.confirmTitle"), details, [
+      { text: t("auth.cancel"), style: "cancel" },
+      { text: t("booking.confirmBook"), onPress: book },
+    ]);
+  }
+
+  function confirmCancel() {
+    if (!booking) return;
     Alert.alert(t("booking.cancelTitle"), t("booking.cancelMessage"), [
       { text: t("booking.keep"), style: "cancel" },
       {
@@ -111,6 +107,7 @@ export default function BookingCard({ event }: Props) {
         onPress: async () => {
           try {
             await feathers.service("eventRegistrations").patch(booking._id, { status: "cancelled" });
+            setBooking(null);
           } catch (error: any) {
             Alert.alert(t("booking.cancel"), error?.message || t("booking.errorGeneric"));
           }
@@ -146,6 +143,31 @@ export default function BookingCard({ event }: Props) {
     </Text>
   );
 
+  // Booked: that's all there is to show.
+  if (booking) {
+    return (
+      <View style={[style.card, style.bookedCard]}>
+        <View style={style.row}>
+          <SuccessCircleIcon fill={theme.colors.secondary} size={24} />
+          <Text variant="titleMedium" style={{ color: theme.colors.secondary }}>
+            {t("booking.booked")}
+          </Text>
+        </View>
+        <Text variant="bodyLarge" style={{ color: theme.colors.text }}>
+          {peopleLabel(booking.people, t)}
+        </Text>
+        {!!user?.email && (
+          <Text variant="bodySmall" style={{ color: theme.colors.grey2 }}>
+            {fill(t("booking.emailed"), { email: user.email })}
+          </Text>
+        )}
+        <Button mode="text" compact textColor={theme.colors.error} style={{ alignSelf: "flex-start", marginLeft: -8 }} onPress={confirmCancel}>
+          {t("booking.cancel")}
+        </Button>
+      </View>
+    );
+  }
+
   if (!signedIn) {
     return (
       <View style={style.card}>
@@ -159,44 +181,6 @@ export default function BookingCard({ event }: Props) {
         <Button mode="outlined" onPress={() => router.push(Routes.Register)} style={style.button}>
           {t("booking.createAccount")}
         </Button>
-      </View>
-    );
-  }
-
-  const bookedPanels = bookings.map((b) => (
-    <View key={b._id} style={style.bookedPanel}>
-      <View style={style.row}>
-        <SuccessCircleIcon fill={theme.colors.secondary} size={24} />
-        <Text variant="titleMedium" style={{ color: theme.colors.secondary }}>
-          {t("booking.booked")}
-        </Text>
-      </View>
-      <Text variant="labelLarge" style={{ color: theme.colors.text }}>
-        {longDay(b.day)}
-      </Text>
-      <Text variant="bodyMedium" style={{ color: theme.colors.text }}>
-        {peopleLabel(b.adults, b.children, t)}
-      </Text>
-      {!!user?.email && (
-        <Text variant="bodySmall" style={{ color: theme.colors.grey2 }}>
-          {fill(t("booking.emailed"), { email: user.email })}
-        </Text>
-      )}
-      <Button mode="text" compact textColor={theme.colors.error} style={{ alignSelf: "flex-start", marginLeft: -8 }} onPress={() => cancel(b)}>
-        {t("booking.cancel")}
-      </Button>
-    </View>
-  ));
-
-  if (bookings.length && !showForm) {
-    return (
-      <View style={style.card}>
-        {bookedPanels}
-        {openDays.length > 0 && (
-          <Button mode="outlined" onPress={() => setShowForm(true)} style={style.button}>
-            {t("booking.bookAnother")}
-          </Button>
-        )}
       </View>
     );
   }
@@ -215,91 +199,33 @@ export default function BookingCard({ event }: Props) {
     );
   }
 
-  if (!openDays.length) return bookings.length ? <View style={style.card}>{bookedPanels}</View> : null;
+  if (left === 0) {
+    return (
+      <View style={style.card}>
+        {title}
+        <Text variant="bodyMedium" style={{ color: theme.colors.grey2 }}>
+          {t("booking.full")}
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={style.card}>
-      {bookedPanels}
       {title}
-
-      {/* Day: a row of date tiles for a multi-day event, a plain date for a one-day one. */}
-      {availability.days.length > 1 ? (
-        <View style={{ rowGap: theme.spacing.xs }}>
-          <Text variant="labelMedium" style={{ color: theme.colors.grey2 }}>
-            {t("booking.day")}
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ columnGap: theme.spacing.xs }}>
-            {openDays.map((d) => {
-              const m = bookingDay(d.day);
-              const isSelected = d.day === day;
-              const isFull = d.left !== null && d.left <= 0;
-              return (
-                <Pressable
-                  key={d.day}
-                  onPress={() => setDay(d.day)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: isSelected, disabled: isFull }}
-                  accessibilityLabel={`${longDay(d.day)}${isFull ? `, ${t("booking.full_short")}` : ""}`}
-                  style={[style.dayTile, isSelected && style.dayTileSelected, isFull && !isSelected && style.dayTileFull]}
-                >
-                  <Text variant="bodySmall" style={[style.dayTileText, isSelected && style.dayTileTextSelected]}>
-                    {m.format("ddd")}
-                  </Text>
-                  <Text variant="headlineSmall" style={[style.dayTileText, isSelected && style.dayTileTextSelected, { marginVertical: -4 }]}>
-                    {m.format("D")}
-                  </Text>
-                  <Text variant="bodySmall" style={[style.dayTileText, isSelected && style.dayTileTextSelected]}>
-                    {isFull ? t("booking.full_short") : m.format("MMM")}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
-      ) : (
-        !!selected && (
-          <View style={style.row}>
-            <CalendarOutlinedIcon fill={theme.colors.primary} size={20} />
-            <Text variant="labelLarge" style={{ color: theme.colors.text }}>
-              {longDay(selected.day)}
-            </Text>
-          </View>
-        )
-      )}
-
       <View style={style.counterRow}>
         <Text variant="labelLarge" style={{ color: theme.colors.text }}>
-          {t("booking.adults")}
+          {t("booking.people")}
         </Text>
-        <NumInput inputValue={adults} onChange={setAdults} min={1} max={MAX_ADULTS} />
+        <NumInput inputValue={Math.min(people, maxPeople)} onChange={setPeople} min={1} max={maxPeople} />
       </View>
-      <View style={style.counterRow}>
-        <View>
-          <Text variant="labelLarge" style={{ color: theme.colors.text }}>
-            {t("booking.children")}
-          </Text>
-          <Text variant="bodySmall" style={{ color: theme.colors.grey2 }}>
-            {t("booking.childrenHint")}
-          </Text>
-        </View>
-        <NumInput inputValue={children} onChange={setChildren} min={0} max={MAX_CHILDREN} />
-      </View>
-
-      {selected && selected.left !== null && (
-        <Text variant="bodySmall" style={{ color: full || tooMany ? theme.colors.error : theme.colors.grey2 }}>
-          {placesLeftLabel(selected.left, t)}
+      {left !== null && (
+        <Text variant="bodySmall" style={{ color: theme.colors.grey2 }}>
+          {placesLeftLabel(left, t)}
         </Text>
       )}
-
-      <Button
-        mode="contained"
-        onPress={book}
-        loading={submitting}
-        disabled={submitting || !selected || full || tooMany}
-        style={style.button}
-        textColor={theme.colors.textOnPrimary}
-      >
-        {bookButtonLabel(people, t)}
+      <Button mode="contained" onPress={confirmBooking} loading={submitting} disabled={submitting} style={style.button} textColor={theme.colors.textOnPrimary}>
+        {t("booking.bookNow")}
       </Button>
       {!!errorMsg && <Text style={{ color: theme.colors.error }}>{errorMsg}</Text>}
     </View>
@@ -318,30 +244,12 @@ const useStyle = (theme: AppTheme) =>
       borderWidth: 1,
       borderColor: theme.colors.grey4,
     },
+    bookedCard: {
+      backgroundColor: theme.colors.primary + "14",
+      borderColor: theme.colors.primary + "55",
+    },
     center: { alignItems: "center", justifyContent: "center", minHeight: 80 },
     row: { flexDirection: "row", alignItems: "center", columnGap: theme.spacing.xs },
     counterRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
     button: { borderRadius: theme.borderRadius.sm, marginTop: theme.spacing.xxs },
-    // Same vocabulary as the date blocks on the events list.
-    dayTile: {
-      width: 60,
-      paddingVertical: theme.spacing.xs,
-      alignItems: "center",
-      borderRadius: theme.borderRadius.sm,
-      borderWidth: 1,
-      borderColor: theme.colors.grey4,
-      backgroundColor: theme.colors.container,
-    },
-    dayTileSelected: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
-    dayTileFull: { opacity: 0.5 },
-    dayTileText: { color: theme.colors.text },
-    dayTileTextSelected: { color: theme.colors.textOnPrimary, fontWeight: "700" },
-    bookedPanel: {
-      padding: theme.spacing.md,
-      rowGap: theme.spacing.xxs,
-      borderRadius: theme.borderRadius.sm,
-      backgroundColor: theme.colors.primary + "14",
-      borderWidth: 1,
-      borderColor: theme.colors.primary + "55",
-    },
   });

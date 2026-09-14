@@ -5,7 +5,8 @@ import { useLanguage } from "@/providers/language_provider";
 import { AppTheme, useAppTheme } from "@/providers/style_provider";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Routes } from "@/app/composable/routes";
-import { armeniaToday, bookingDay, peopleLabel } from "@/app/composable/bookings";
+import { eventWhenLabel, peopleLabel } from "@/app/composable/bookings";
+import { eventMoment, isEventPast } from "@/app/composable/event_dates";
 import { router, useFocusEffect } from "expo-router";
 import _ from "lodash";
 import { useCallback, useMemo, useState } from "react";
@@ -14,7 +15,7 @@ import { Button, Text } from "react-native-paper";
 
 type Row = Booking & { eventDoc?: Event };
 
-/** Everything the person has booked: upcoming first (soonest at the top), then past and cancelled. */
+/** Everything the person has booked: upcoming events first (soonest at the top), then past and cancelled. */
 export default function MyBookingsPage() {
   const { theme } = useAppTheme();
   const style = useStyle(theme);
@@ -29,7 +30,7 @@ export default function MyBookingsPage() {
   const load = useCallback(async () => {
     setFailed(false);
     try {
-      const res = await feathers.service("eventRegistrations").find({ query: { $sort: { day: -1 }, $limit: 100 } });
+      const res = await feathers.service("eventRegistrations").find({ query: { $sort: { createdAt: -1 }, $limit: 100 } });
       const bookings: Booking[] = Array.isArray(res) ? res : res.data;
       const ids = _.uniq(bookings.map((b) => String(b.event)));
       let events: Event[] = [];
@@ -55,9 +56,10 @@ export default function MyBookingsPage() {
   );
 
   const sections = useMemo((): { key: string; title: string; data: Row[] }[] => {
-    const today = armeniaToday();
-    const upcoming = rows.filter((r) => r.status === "confirmed" && r.day >= today).sort((a, b) => a.day.localeCompare(b.day));
-    const past = rows.filter((r) => !(r.status === "confirmed" && r.day >= today));
+    const start = (r: Row) => (r.eventDoc ? new Date(r.eventDoc.startDate).getTime() : 0);
+    const isUpcoming = (r: Row) => r.status === "confirmed" && !!r.eventDoc && !isEventPast(r.eventDoc);
+    const upcoming = rows.filter(isUpcoming).sort((a, b) => start(a) - start(b));
+    const past = rows.filter((r) => !isUpcoming(r)).sort((a, b) => start(b) - start(a));
     return [
       ...(upcoming.length ? [{ key: "upcoming", title: t("booking.upcoming"), data: upcoming }] : []),
       ...(past.length ? [{ key: "past", title: t("booking.pastAndCancelled"), data: past }] : []),
@@ -65,17 +67,17 @@ export default function MyBookingsPage() {
   }, [rows, t]);
 
   function renderRow({ item, section }: { item: Row; section: { key: string; title: string } }) {
-    const m = bookingDay(item.day);
+    const m = eventMoment(item.eventDoc?.startDate);
     const faded = section.key === "past";
     const status = item.status === "cancelled" ? t("booking.statusCancelled") : item.status === "attended" ? t("booking.statusAttended") : "";
     return (
       <Pressable onPress={() => router.push({ pathname: "/home/event", params: { id: String(item.event) } })} style={style.row} accessibilityRole="button">
         <View style={[style.dateBlock, faded && style.dateBlockPast]}>
           <Text variant="headlineSmall" style={style.dateNumber}>
-            {m.format("D")}
+            {m ? m.format("D") : "?"}
           </Text>
           <Text variant="bodySmall" style={style.dateMonth}>
-            {m.format("MMM")}
+            {m ? m.format("MMM") : ""}
           </Text>
         </View>
         <View style={{ flex: 1, rowGap: 2 }}>
@@ -83,7 +85,8 @@ export default function MyBookingsPage() {
             {item.eventDoc ? getLocalizedText(item.eventDoc.name as any) : "—"}
           </Text>
           <Text variant="bodySmall" style={{ color: theme.colors.grey2 }}>
-            {m.format("dddd")}, {peopleLabel(item.adults, item.children || 0, t)}
+            {item.eventDoc ? `${eventWhenLabel(item.eventDoc)}, ` : ""}
+            {peopleLabel(item.people || 1, t)}
           </Text>
           {!!status && (
             <Text variant="bodySmall" style={{ color: item.status === "cancelled" ? theme.colors.error : theme.colors.grey2 }}>
