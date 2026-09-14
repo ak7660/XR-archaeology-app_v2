@@ -29,6 +29,11 @@ interface AuthRequest {
 
 class AuthContext {
   readonly user?: User;
+  /** Stored sign-in state has been read; until then, don't decide what to show. */
+  readonly ready: boolean;
+  /** The person chose "Continue as guest" on the start screen. */
+  readonly guestChosen: boolean;
+  continueAsGuest: () => Promise<void>;
   updateUser: (user: Partial<User>) => Promise<void>;
   login: (props: AuthProps) => Promise<void>;
   logout: () => Promise<boolean>;
@@ -54,6 +59,8 @@ interface Props {
 }
 
 const localStorageKey = "authState";
+/** Remembers "Continue as guest", so the start screen isn't shown on every launch. */
+const guestChoiceKey = "welcomeChoice";
 
 /** The session is over (password changed elsewhere, account deleted, token expired). */
 function isSessionEnded(error: any) {
@@ -74,6 +81,8 @@ export function AuthProvider({ children }: Props) {
   const feathers = useFeathers();
   const { language } = useLanguage();
   const [state, setState] = useState<AuthState>(() => new AuthState());
+  const [ready, setReady] = useState(false);
+  const [guestChosen, setGuestChosen] = useState(false);
   const stateRef = useRef(state);
   stateRef.current = state;
   const authPromise = useRef<Promise<void | null> | null>(null);
@@ -86,7 +95,11 @@ export function AuthProvider({ children }: Props) {
       const stored = await fromStorage();
       if (stored) setState(stored);
       else setState({ user: guestUser() });
+      try {
+        setGuestChosen((await SecureStore.getItemAsync(guestChoiceKey)) === "guest");
+      } catch {}
       loaded.current = true;
+      setReady(true);
       if (stored?.token) {
         // Refresh the account from the server; also catches a session ended elsewhere.
         await reAuthentication(true, stored.token).catch(() => {});
@@ -251,6 +264,21 @@ export function AuthProvider({ children }: Props) {
     [authentication]
   );
 
+  async function continueAsGuest() {
+    setGuestChosen(true);
+    try {
+      await SecureStore.setItemAsync(guestChoiceKey, "guest");
+    } catch {}
+  }
+
+  /** After signing out or deleting the account, the start screen comes back next launch. */
+  async function forgetGuestChoice() {
+    setGuestChosen(false);
+    try {
+      await SecureStore.deleteItemAsync(guestChoiceKey);
+    } catch {}
+  }
+
   async function register(newUser: Partial<User>) {
     const guest = stateRef.current.user;
     await feathers.service("users").create({
@@ -272,6 +300,7 @@ export function AuthProvider({ children }: Props) {
       authPromise.current = null;
       authenticated.current = false;
       setState({ user: guestUser() });
+      await forgetGuestChoice();
       const deleteSuccess = await localDelete();
       return !!authRes && deleteSuccess;
     },
@@ -312,6 +341,7 @@ export function AuthProvider({ children }: Props) {
       await feathers.service("authentication").remove(null);
     } catch {}
     endSession(false);
+    await forgetGuestChoice();
     await localDelete();
   }
 
@@ -319,6 +349,9 @@ export function AuthProvider({ children }: Props) {
     <AuthStore.Provider
       value={{
         user: state.user,
+        ready,
+        guestChosen,
+        continueAsGuest,
         updateUser,
         login,
         logout,

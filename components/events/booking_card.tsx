@@ -156,6 +156,9 @@ export default function BookingCard({ event }: Props) {
         <Button mode="contained" onPress={() => router.push(Routes.Login)} style={style.button} textColor={theme.colors.textOnPrimary}>
           {t("booking.signIn")}
         </Button>
+        <Button mode="outlined" onPress={() => router.push(Routes.Register)} style={style.button}>
+          {t("booking.createAccount")}
+        </Button>
       </View>
     );
   }

@@ -4,6 +4,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 import * as SecureStore from "expo-secure-store";
 import { useAppTheme } from "@/providers/style_provider";
+import { useAuth } from "@/providers/auth_provider";
+import { useSegments } from "expo-router";
 
 const PRE_TEST_URL = "https://tally.so/r/2EvZWM";
 const STORAGE_KEY = "has_completed_survey";
@@ -13,9 +15,14 @@ export default function PreTestQuestionnaireModal() {
   const { theme } = useAppTheme();
   const { top, bottom } = useSafeAreaInsets();
 
+  const { ready, user, guestChosen } = useAuth();
+  const segments = useSegments();
+  // Only after the start screen: signed in or "continue as guest", and not while on a sign-in screen.
+  const eligible = ready && (!!user?._id || guestChosen) && segments[0] !== "(auth)";
+
   useEffect(() => {
-    checkFirstTime();
-  }, []);
+    if (eligible) checkFirstTime();
+  }, [eligible]);
 
   const checkFirstTime = async () => {
     try {

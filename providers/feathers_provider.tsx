@@ -6,18 +6,24 @@ import socketio from "socket.io-client";
 export { Paginated };
 
 let connected = false;
+/** Split "https://host/app" into the origin and the path the API lives under.
+ * socket.io must be given the origin plus a `path` - a path in the URL itself
+ * would be read as a socket.io namespace. (RN's URL polyfill has no `pathname`.) */
+function splitBaseURL(baseURL: string) {
+  const match = baseURL.match(/^(https?:\/\/[^/?#]+)(\/[^?#]*)?/i);
+  return { origin: match?.[1] ?? baseURL, basePath: (match?.[2] ?? "").replace(/\/+$/, "") };
+}
+
 function createClient(baseURL?: string) {
-  let apiURL = "";
-  let baseHost = "";
-  if (baseURL) {
-    baseHost = baseURL;
-  }
-  apiURL = baseHost + "/api";
+  const base = (baseURL || "").replace(/\/+$/, "");
+  // e.g. https://xr-archaeology-server-production.up.railway.app/app/api
+  const apiURL = base + "/api";
+  const { origin, basePath } = splitBaseURL(base);
 
   const prefix = process.env.EXPO_PUBLIC_PREFIX || "";
 
-  const socket = socketio(baseHost, {
-    path: `${prefix}/api/socket.io`,
+  const socket = socketio(origin, {
+    path: `${basePath}${prefix}/api/socket.io`,
     transports: ["websocket"],
     forceNew: true,
   });

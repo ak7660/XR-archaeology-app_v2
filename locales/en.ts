@@ -98,6 +98,15 @@ export const en = {
     generic: "Something went wrong. Please try again.",
   },
 
+  // First screen: sign in, create an account or continue as a guest
+  welcome: {
+    tagline: "Explore Vedi Fortress and the river valley: augmented-reality reconstructions, walking routes, local events and an AI trip planner.",
+    createAccount: "Create account",
+    signIn: "Sign in",
+    guest: "Continue as guest",
+    guestNote: "As a guest you can explore everything. Booking events and saving trip plans need an account.",
+  },
+
   booking: {
     title: "Book your place",
     free: "Booking is free. Sign in so the organisers know you're coming.",
@@ -136,6 +145,7 @@ export const en = {
     browseEvents: "Browse events",
     loadFailed: "Couldn't load your bookings. Pull down to try again.",
     errorGeneric: "The booking didn't go through. Please try again.",
+    createAccount: "Create account",
   },
 
   tripPlans: {

@@ -7,6 +7,7 @@ export enum Routes {
   Route = '/home/route',
   Register = '/register',
   Login = '/login',
+  Welcome = '/welcome',
   VerifyEmail = '/verify_email',
   ForgotPassword = '/forgot_password',
   ChangePassword = '/account/change_password',
