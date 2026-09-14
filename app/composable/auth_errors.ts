@@ -17,6 +17,9 @@ export function describeAuthError(error: any, t: Translate, context?: "login" | 
   if (code === 429) return t("authErrors.tooMany");
   if (code === 409) return t("authErrors.emailTaken");
   if (code === 401) return context === "login" ? t("authErrors.invalidLogin") : t("authErrors.sessionEnded");
+  // Refusals like "Confirm your email address before booking." or "This event is
+  // fully booked." are written for people - show them rather than a generic line.
+  if ((code === 403 || code === 404) && error?.message) return error.message;
   if (code === 400) {
     if (reason === "wrong") return t("authErrors.codeWrong");
     if (reason === "expired" || reason === "missing") return t("authErrors.codeExpired");

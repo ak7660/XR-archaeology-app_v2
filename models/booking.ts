@@ -1,12 +1,9 @@
-/** A place booked at an event (XR-archaeology-server `eventRegistrations`). */
+/** A booking for an event (XR-archaeology-server `eventRegistrations`): one per person per event. */
 export interface Booking {
   _id: string;
   event: string;
   user?: string;
-  /** Armenia calendar day, YYYY-MM-DD. */
-  day: string;
-  adults: number;
-  children: number;
+  people: number;
   name?: string;
   email?: string;
   status: "confirmed" | "cancelled" | "attended";
@@ -17,8 +14,8 @@ export interface Booking {
 export interface EventAvailability {
   event: string;
   bookingEnabled: boolean;
-  capacity: number | null;
   ended: boolean;
-  /** `left` is null when the event has no limit. */
-  days: { day: string; left: number | null }[];
+  capacity: number | null;
+  /** Places left; null when the event has no limit. */
+  left: number | null;
 }

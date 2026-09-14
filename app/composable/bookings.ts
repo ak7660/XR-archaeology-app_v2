@@ -1,29 +1,12 @@
 /** Wording and dates for event bookings, kept out of the screens. */
-import moment from "moment";
 import { TranslationKey } from "@/locales";
 import { fill } from "./auth_errors";
+import { eventMoment } from "./event_dates";
 
 type Translate = (key: TranslationKey) => string;
 
-/** A booking day (YYYY-MM-DD, an Armenia calendar day) as a moment, without any timezone shift. */
-export function bookingDay(day: string) {
-  return moment.utc(day, "YYYY-MM-DD", true);
-}
-
-/** "Saturday 20 September" */
-export function longDay(day: string) {
-  return bookingDay(day).format("dddd D MMMM");
-}
-
-export function peopleLabel(adults: number, children: number, t: Translate) {
-  const a = adults === 1 ? t("booking.adultOne") : fill(t("booking.adultMany"), { count: adults });
-  if (!children) return a;
-  const c = children === 1 ? t("booking.childOne") : fill(t("booking.childMany"), { count: children });
-  return `${a}, ${c}`;
-}
-
-export function bookButtonLabel(people: number, t: Translate) {
-  return people === 1 ? t("booking.bookOne") : fill(t("booking.bookMany"), { count: people });
+export function peopleLabel(people: number, t: Translate) {
+  return people === 1 ? t("booking.peopleOne") : fill(t("booking.peopleMany"), { count: people });
 }
 
 export function placesLeftLabel(left: number, t: Translate) {
@@ -31,7 +14,11 @@ export function placesLeftLabel(left: number, t: Translate) {
   return left === 1 ? t("booking.onePlaceLeft") : fill(t("booking.placesLeft"), { count: left });
 }
 
-/** Today in Armenia, to split upcoming from past bookings the same way the server does. */
-export function armeniaToday() {
-  return moment.utc().utcOffset(240).format("YYYY-MM-DD");
+/** "Sun, 20 Sep 2026", or "20 Sep - 25 Sep 2026" for a multi-day event (Armenia days). */
+export function eventWhenLabel(event: { startDate?: any; endDate?: any }) {
+  const start = eventMoment(event.startDate);
+  const end = eventMoment(event.endDate);
+  if (!start) return "";
+  if (!end || end.isSame(start, "day")) return start.format("ddd, D MMM YYYY");
+  return `${start.format("D MMM")} - ${end.format("D MMM YYYY")}`;
 }
