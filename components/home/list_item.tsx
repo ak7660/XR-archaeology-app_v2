@@ -5,6 +5,7 @@ import React, { useCallback } from "react";
 import { Image, StyleSheet, View } from "react-native";
 import { Text, TouchableRipple } from "react-native-paper";
 import IconBtn from "../icon_btn";
+import { LocationIcon } from "../icons";
 import { Href } from "expo-router/build/link/href";
 import { Tag, MultilingualText } from "@/models";
 import { Routes } from "@/app/composable/routes";
@@ -21,10 +22,12 @@ export interface Props {
   id?: string;
   latitude?: number;
   longitude?: number;
-  tags?: string | (string | Tag)[];
+    tags?: string | (string | Tag)[];
+  /** Already formatted, e.g. "450 m" - shown while the list is sorted by distance. */
+  distance?: string;
 }
 
-export default function ListItem({ name, briefDesc, images, href, showNavigate, latitude, longitude, ...props }: Props) {
+export default function ListItem({ name, briefDesc, images, href, showNavigate, latitude, longitude, distance, ...props }: Props) {
   const { theme } = useAppTheme();
   const style = useStyle({ theme });
   
@@ -125,10 +128,18 @@ export default function ListItem({ name, briefDesc, images, href, showNavigate, 
                     {localizedBriefDesc}
                   </Text>
                 )}
-                {tags.length > 0 && (
+                                {tags.length > 0 && (
                   <Text variant="bodyMedium" style={{ color: theme.colors.primary }}>
                     {tags}
                   </Text>
+                )}
+                {!!distance && (
+                  <View style={{ flexDirection: "row", alignItems: "center", columnGap: 4 }}>
+                    <LocationIcon fill={theme.colors.grey2} size={14} />
+                    <Text variant="bodySmall" style={{ color: theme.colors.grey2 }}>
+                      {distance}
+                    </Text>
+                  </View>
                 )}
               </View>
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center" }}>{actions}</View>

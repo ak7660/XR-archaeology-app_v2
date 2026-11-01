@@ -1,17 +1,18 @@
 import { Routes } from "@/app/composable/routes";
-import { Route } from "@/models";
+import { Location, Route } from "@/models";
 import { Paginated, useFeathers } from "@/providers/feathers_provider";
 import { useLanguage } from "@/providers/language_provider";
 import { useAppTheme } from "@/providers/style_provider";
 import { useTranslation } from "@/hooks/useTranslation";
 import { AppBar, ListItem, ListItemProps, MainBody, NAVBAR_HEIGHT } from "@components";
 import { SearchInput } from "@/components/common/search";
-import { SortIcon } from "@/components/icons";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FlatList, TouchableOpacity, View } from "react-native";
 import { ActivityIndicator, Text } from "react-native-paper";
-import { useLocation } from "@/hooks/useLocation";
-import { calculateDistance } from "@/plugins/utils";
+import { useNearby } from "@/hooks/useNearby";
+import NearbySortButton from "@/components/common/nearby_sort";
+import { distanceKm, formatDistance } from "@/app/composable/nearby";
 
 export default function Page() {
   const feathers = useFeathers();
@@ -25,8 +26,11 @@ export default function Page() {
   const [loading, setLoading] = useState(false);
   const [hasScrolled, setScrolled] = useState(false);
   const [search, setSearchText] = useState("");
-  const [isSorted, setIsSorted] = useState(false);
-  const { location: userLocation } = useLocation();
+  const nearby = useNearby();
+  /** Where each walk begins: a route carries no coordinates of its own, so its
+   * first location stands in - for the distance, and for the Navigate button,
+   * which until now read a `points` field that routes never had. */
+  const [startPoints, setStartPoints] = useState<Record<string, Location>>({});
   const cursor = useRef(0);
   const total = useRef(0);
 
@@ -45,7 +49,7 @@ export default function Page() {
   const searched_list = useMemo(() => {
     const search_text = search.trim().toLowerCase();
     let filtered = routes.slice();
-    
+
     if (search_text.length) {
       filtered = filtered.filter((route) => {
         const routeName = route.name[language] ?? route.name.en;
@@ -53,26 +57,9 @@ export default function Page() {
       });
     }
 
-    if (isSorted && userLocation) {
-      filtered.sort((a, b) => {
-        // Log coordinates for routes if available
-        // console.log(`Sorting Route: ${a.name.en} (Points: ${a.points?.length || 0})`);
-        
-        // For routes, we might need to use the first point as the reference distance
-        const startA = a.points && a.points.length > 0 ? a.points[0] : null;
-        const startB = b.points && b.points.length > 0 ? b.points[0] : null;
-
-        if (!startA) return 1;
-        if (!startB) return -1;
-        
-        const distA = calculateDistance(userLocation.latitude, userLocation.longitude, startA.latitude, startA.longitude);
-        const distB = calculateDistance(userLocation.latitude, userLocation.longitude, startB.latitude, startB.longitude);
-        return distA - distB;
-      });
-    }
-
-    return filtered;
-  }, [search, routes, language, isSorted, userLocation]);
+    // A walk is as far away as the place it starts from.
+    return nearby.sort(filtered, (route) => startPoints[route._id]);
+  }, [search, routes, language, startPoints, nearby.enabled, nearby.position]);
 
   async function syncData() {
     const query = { $skip: cursor.current, $sort: "order" };
@@ -84,6 +71,28 @@ export default function Page() {
 
     setRoutes((items) => [...items, ...res.data]);
     cursor.current += count;
+    await syncStartPoints(res.data.map((route) => route._id));
+  }
+
+  /** First location of each walk, in one request. */
+  async function syncStartPoints(routeIds: string[]) {
+    if (!routeIds.length) return;
+    try {
+      const res: Paginated<Location> = await feathers.service("locations").find({
+        query: { route: { $in: routeIds }, $sort: { order: 1 }, $limit: 200, $select: ["_id", "route", "latitude", "longitude"] },
+      });
+      const list = Array.isArray(res) ? res : res.data;
+      setStartPoints((current) => {
+        const next = { ...current };
+        for (const location of list) {
+          const routeId = String((location as any).route);
+          if (!next[routeId]) next[routeId] = location;
+        }
+        return next;
+      });
+    } catch (error) {
+      console.warn("hiking: could not load where the walks start", error);
+    }
   }
 
   async function onScroll({ nativeEvent }) {
@@ -114,17 +123,16 @@ export default function Page() {
         contentContainerStyle={{ flexGrow: 1, paddingBottom: NAVBAR_HEIGHT + theme.spacing.lg }}
         contentInset={{ bottom: theme.spacing.lg }}
         renderItem={({ item }) => {
-          // Use first point coordinates for distance-related UI (like 'Navigate')
-          const routeLat = item.points && item.points.length > 0 ? item.points[0].latitude : undefined;
-          const routeLon = item.points && item.points.length > 0 ? item.points[0].longitude : undefined;
+          const start = startPoints[item._id];
 
           const props: ListItemProps = {
             name: getLocalizedText(item.name),
             briefDesc: getLocalizedText(item.briefDesc),
             images: item.thumbnails,
             showNavigate: true,
-            latitude: routeLat,
-            longitude: routeLon,
+            latitude: start?.latitude,
+            longitude: start?.longitude,
+            distance: formatDistance(distanceKm(nearby.position, start)),
             href: {
               pathname: Routes.Route,
               params: { id: item._id },
@@ -144,22 +152,9 @@ export default function Page() {
               <Text variant="bodyMedium" style={{ color: theme.colors.grey2, marginBottom: theme.spacing.md }}>
                 Armenia is a moutainous country, you can enjoy a heritage and scenic hike.
               </Text>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.sm }}>
-                <View style={{ flex: 1 }}>
-                  <SearchInput onChangeText={(val) => setSearchText(val)}></SearchInput>
-                </View>
-                <TouchableOpacity 
-                  onPress={() => setIsSorted(!isSorted)}
-                  style={{ 
-                    backgroundColor: isSorted ? theme.colors.primary : theme.colors.surface, 
-                    padding: 10, 
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    borderColor: theme.colors.outline
-                  }}
-                >
-                  <SortIcon fill={isSorted ? theme.colors.onPrimary : theme.colors.onSurface} />
-                </TouchableOpacity>
+              <View style={{ rowGap: theme.spacing.sm }}>
+                <SearchInput onChangeText={(val) => setSearchText(val)}></SearchInput>
+                <NearbySortButton status={nearby.status} onPress={nearby.toggle} />
               </View>
             </View>
           );

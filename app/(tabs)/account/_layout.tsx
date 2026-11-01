@@ -7,6 +7,7 @@ export default function StackLayout() {
       <Stack.Screen name="profile" />
       <Stack.Screen name="change_password" />
       <Stack.Screen name="bookings" />
+      <Stack.Screen name="favourites" />
       <Stack.Screen name="trip_plans" />
       <Stack.Screen name="settings" />
       <Stack.Screen name="help_feedback" />

@@ -1,6 +1,6 @@
 import { AppBar, Carousel, ContentItem, ErrorPage, LoadingPage, MainBody, NAVBAR_HEIGHT } from "@/components";
 import MapPreview from "@/components/map/map_preview";
-import { BookmarkOutlineIcon, CompassIcon, LocationIcon } from "@/components/icons";
+import { BookmarkIcon, BookmarkOutlineIcon, CompassIcon, LocationIcon } from "@/components/icons";
 import { Attraction, GeoPoint, Tag } from "@/models";
 import { useFeathers } from "@/providers/feathers_provider";
 import { AppTheme, useAppTheme } from "@/providers/style_provider";
@@ -15,6 +15,7 @@ import { LatLng } from "react-native-maps";
 import { Routes } from "@/app/composable/routes";
 import { useLocalizedText } from "@/hooks/useLocalizedText";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useBookmarks } from "@/hooks/useBookmarks";
 
 export default function Page() {
   const feathers = useFeathers();
@@ -30,6 +31,8 @@ export default function Page() {
   const { id, service = "attractions" } = useLocalSearchParams<{ id?: string; service?: string }>();
   const [loaded, setLoaded] = useState(false);
   const [item, setItem] = useState<Attraction>();
+  const { isSaved, toggle } = useBookmarks();
+  const saved = isSaved(id);
 
   const canNavigate = item?.latitude && item.latitude;
   useEffect(() => {
@@ -73,14 +76,25 @@ export default function Page() {
           goTo();
         }
       } catch (err) {
-        Alert.alert("Get Current Location Error", err.message, [ { text: "Ok", style: "cancel" }, ])
+        Alert.alert("Get Current Location Error", err.message, [{ text: "Ok", style: "cancel" }]);
       }
     }
   }
 
   return (
     <MainBody padding={{ top: 0 }}>
-      <AppBar showBack actions={[{ icon: (props) => <BookmarkOutlineIcon fill={props.color} size={props.size} /> }]} />
+      <AppBar
+        showBack
+        actions={[
+          {
+            // Saved places are listed under Account > Favourites.
+            accessibilityLabel: saved ? t("favourites.remove") : t("favourites.save"),
+            onPress: () => toggle(id),
+            icon: (props) =>
+              saved ? <BookmarkIcon fill={theme.colors.primary} size={props.size} /> : <BookmarkOutlineIcon fill={props.color} size={props.size} />,
+          },
+        ]}
+      />
       {!loaded ? (
         <LoadingPage />
       ) : item ? (
@@ -140,7 +154,9 @@ export default function Page() {
               >
                 <Button
                   mode="contained"
-                  onPress={() => router.replace({ pathname: Routes.Map, params: { latitude: item.latitude, id: item._id, longitude: item.longitude } })}
+                  onPress={() =>
+                    router.replace({ pathname: Routes.Map, params: { latitude: item.latitude, id: item._id, longitude: item.longitude } })
+                  }
                   textColor={theme.colors.textOnPrimary}
                   style={{ borderRadius: theme.borderRadius.xs }}
                   icon={() => <LocationIcon fill={theme.colors.textOnPrimary} size={20} />}

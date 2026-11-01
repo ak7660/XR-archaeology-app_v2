@@ -1,5 +1,5 @@
 import { AppBar, EventItem, LoadingPage, MainBody, NAVBAR_HEIGHT } from "@/components";
-import { SortIcon } from "@/components/icons";
+
 import { Event } from "@/models";
 import { Paginated, useFeathers } from "@/providers/feathers_provider";
 import { useAppTheme, AppTheme } from "@/providers/style_provider";
@@ -8,8 +8,8 @@ import { FlatList, Pressable, SectionList, StyleSheet, TouchableOpacity, View } 
 import { Calendar, CalendarUtils, DateData } from "react-native-calendars";
 import { MarkedDates } from "react-native-calendars/src/types";
 import { Button, Text } from "react-native-paper";
-import { useLocation } from "@/hooks/useLocation";
-import { calculateDistance } from "@/plugins/utils";
+import { useNearby } from "@/hooks/useNearby";
+import NearbySortButton from "@/components/common/nearby_sort";
 import { useLocalizedText } from "@/hooks/useLocalizedText";
 import {
   dayStringsBetween,
@@ -29,9 +29,8 @@ export default function Page() {
   const localize = useLocalizedText();
   const [loaded, setLoaded] = useState(false);
   const [events, setEvents] = useState<Event[]>([]);
-  const [isSorted, setIsSorted] = useState(false);
+  const nearby = useNearby();
   const [tab, setTab] = useState<Tab>("upcoming");
-  const { location: userLocation } = useLocation();
 
   const initDate = CalendarUtils.getCalendarDateString(new Date());
   const minDate = initDate;
@@ -45,7 +44,7 @@ export default function Page() {
    * language renders as a blank card, so it is left out everywhere. */
   const displayableEvents = useMemo(
     () => events.filter((event) => !!(typeof event.name === "string" ? event.name : localize(event.name))?.trim()),
-    [events, localize]
+    [events, localize],
   );
 
   /** Upcoming (including anything on right now) and past, split by end time. */
@@ -86,24 +85,9 @@ export default function Page() {
 
     let filtered = upcoming.filter((event) => eventOverlapsRange(event.startDate, event.endDate, startDate!, endDate!));
 
-    if (isSorted && userLocation) {
-      filtered = [...filtered].sort((a, b) => {
-        const aLat = a.latitude || (typeof a.venue !== "string" && a.venue?.latitude);
-        const aLon = a.longitude || (typeof a.venue !== "string" && a.venue?.longitude);
-        const bLat = b.latitude || (typeof b.venue !== "string" && b.venue?.latitude);
-        const bLon = b.longitude || (typeof b.venue !== "string" && b.venue?.longitude);
-
-        if (!aLat || !aLon) return 1;
-        if (!bLat || !bLon) return -1;
-
-        const distA = calculateDistance(userLocation.latitude, userLocation.longitude, aLat as number, aLon as number);
-        const distB = calculateDistance(userLocation.latitude, userLocation.longitude, bLat as number, bLon as number);
-        return distA - distB;
-      });
-    }
-
-    return filtered;
-  }, [hasRange, startDate, endDate, upcoming, isSorted, userLocation]);
+    // An event is where its venue is, unless it carries its own coordinates.
+    return nearby.sort(filtered, (event) => (event.latitude && event.longitude ? event : typeof event.venue === "string" ? undefined : event.venue));
+  }, [hasRange, startDate, endDate, upcoming, nearby.enabled, nearby.position]);
 
   const onDayPress = useCallback(
     (day: DateData) => {
@@ -111,7 +95,7 @@ export default function Page() {
       setStartDate(next.start);
       setEndDate(next.end);
     },
-    [startDate, endDate]
+    [startDate, endDate],
   );
 
   const resetDates = useCallback(() => {
@@ -200,7 +184,7 @@ export default function Page() {
             upcoming.length ? "Select your dates" : "No upcoming events yet",
             upcoming.length
               ? "Tap a start date and then an end date to see what's on. Days with events are dotted."
-              : "New events will appear here as they're announced. See what has already happened under Past."
+              : "New events will appear here as they're announced. See what has already happened under Past.",
           );
     }
     if (shownEvents.length === 0) {
@@ -262,18 +246,7 @@ export default function Page() {
                   Reset
                 </Text>
               </Button>
-              <TouchableOpacity
-                onPress={() => setIsSorted(!isSorted)}
-                style={{
-                  backgroundColor: isSorted ? theme.colors.primary : theme.colors.surface,
-                  padding: 10,
-                  borderRadius: 8,
-                  borderWidth: 1,
-                  borderColor: theme.colors.outline,
-                }}
-              >
-                <SortIcon fill={isSorted ? theme.colors.onPrimary : theme.colors.onSurface} strokeWidth={2} />
-              </TouchableOpacity>
+              <NearbySortButton status={nearby.status} onPress={nearby.toggle} />
             </View>
             <Calendar
               enableSwipeMonths

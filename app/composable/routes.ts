@@ -12,6 +12,7 @@ export enum Routes {
   ForgotPassword = '/forgot_password',
   ChangePassword = '/account/change_password',
   MyBookings = '/account/bookings',
+  Favourites = '/account/favourites',
   TripPlans = '/account/trip_plans',
   Home = '/home',
   Account = '/account',

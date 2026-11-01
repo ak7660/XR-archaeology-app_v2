@@ -1,6 +1,6 @@
 import { AppBar, MainBody, ListItem, ListItemProps, NAVBAR_HEIGHT } from "@/components";
 import { SearchInput } from "@/components/common/search";
-import { SortIcon } from "@/components/icons";
+
 import { Attraction, AttractionType } from "@/models";
 import { useFeathers, Paginated } from "@/providers/feathers_provider";
 import { useLanguage } from "@/providers/language_provider";
@@ -10,8 +10,9 @@ import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FlatList, TouchableOpacity, View } from "react-native";
 import { ActivityIndicator, Text } from "react-native-paper";
-import { useLocation } from "@/hooks/useLocation";
-import { calculateDistance } from "@/plugins/utils";
+import { useNearby } from "@/hooks/useNearby";
+import NearbySortButton from "@/components/common/nearby_sort";
+import { distanceKm, formatDistance } from "@/app/composable/nearby";
 
 export default function Page() {
   const feathers = useFeathers();
@@ -47,8 +48,7 @@ export default function Page() {
   const [loading, setLoading] = useState(false);
   const [hasScrolled, setScrolled] = useState(false);
   const [search, setSearchText] = useState("");
-  const [isSorted, setIsSorted] = useState(false);
-  const { location: userLocation } = useLocation();
+  const nearby = useNearby();
   const cursor = useRef(0);
   const total = useRef(Infinity);
 
@@ -67,7 +67,7 @@ export default function Page() {
   const searched_list = useMemo(() => {
     const search_text = search.trim().toLowerCase();
     let filtered = attractions.slice();
-    
+
     if (search_text.length) {
       filtered = filtered.filter((attraction) => {
         const attractionName = attraction.name[language] ?? attraction.name.en;
@@ -75,26 +75,8 @@ export default function Page() {
       });
     }
 
-    if (isSorted && userLocation) {
-      filtered.sort((a, b) => {
-        // Log individual item coordinates to debug
-        // console.log(`Sorting: ${a.name.en} (${a.latitude}, ${a.longitude}) vs ${b.name.en} (${b.latitude}, ${b.longitude})`);
-        
-        if (!a.latitude || !a.longitude) return 1;
-        if (!b.latitude || !b.longitude) return -1;
-        
-        const distA = calculateDistance(userLocation.latitude, userLocation.longitude, a.latitude, a.longitude);
-        const distB = calculateDistance(userLocation.latitude, userLocation.longitude, b.latitude, b.longitude);
-        
-        // If distances are very similar, ensure order is consistent
-        if (Math.abs(distA - distB) < 0.0001) return 0;
-        
-        return distA - distB;
-      });
-    }
-
-    return filtered;
-  }, [search, attractions, language, isSorted, userLocation]);
+    return nearby.sort(filtered, (attraction) => attraction);
+  }, [search, attractions, language, nearby.enabled, nearby.position]);
 
   async function syncData() {
     if (cursor.current != 0 && cursor.current >= total.current) return;
@@ -114,24 +96,9 @@ export default function Page() {
 
   const header = (() => {
     return (
-      <View style={{ paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.lg, paddingTop: theme.spacing.md }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.sm }}>
-          <View style={{ flex: 1 }}>
-            <SearchInput onChangeText={(val) => setSearchText(val)}></SearchInput>
-          </View>
-          <TouchableOpacity 
-            onPress={() => setIsSorted(!isSorted)}
-            style={{ 
-              backgroundColor: isSorted ? theme.colors.primary : theme.colors.surface, 
-              padding: 10, 
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: theme.colors.outline
-            }}
-          >
-            <SortIcon fill={isSorted ? theme.colors.onPrimary : theme.colors.onSurface} />
-          </TouchableOpacity>
-        </View>
+      <View style={{ paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.lg, paddingTop: theme.spacing.md, rowGap: theme.spacing.sm }}>
+        <SearchInput onChangeText={(val) => setSearchText(val)}></SearchInput>
+        <NearbySortButton status={nearby.status} onPress={nearby.toggle} />
       </View>
     );
   })();
@@ -176,6 +143,7 @@ export default function Page() {
             latitude: item.latitude,
             longitude: item.longitude,
             tags: item.tags,
+            distance: formatDistance(distanceKm(nearby.position, item)),
             href: {
               pathname: "/home/detail",
               params: { id: item._id, service: "attractions" },
