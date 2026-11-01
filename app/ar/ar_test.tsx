@@ -26,6 +26,7 @@ import { captureScreen } from "react-native-view-shot";
 import { DirectButtons, Direction } from "@/components/arcontrol/native-buttons";
 import { RotationButtons, RotationDirection } from "@/components/arcontrol/rotation-buttons";
 import * as ScreenOrientation from "expo-screen-orientation";
+import { lockTo } from "@/app/composable/orientation";
 import * as MediaLibrary from "expo-media-library";
 import Slider from "@react-native-community/slider";
 import { useArModelStore } from "@/app/state/position";
@@ -240,9 +241,10 @@ const ARTest = observer(() => {
     appStore.setAppBar("hidden");
     ModelStore.reset();
     
-    // Lock orientation and wait for it to stabilize before rendering AR scene
+    // Wait for landscape to settle before the AR scene renders. Restoring
+    // portrait on the way out is the layout's job (app/composable/orientation.ts).
     const initOrientation = async () => {
-      await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE_RIGHT);
+      await lockTo(ScreenOrientation.OrientationLock.LANDSCAPE_RIGHT);
       // Give some time for the orientation change to complete
       setTimeout(() => {
         setIsOrientationReady(true);
@@ -252,7 +254,6 @@ const ARTest = observer(() => {
     initOrientation();
     
     return () => {
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
       appStore.setAppBar("show");
     };
   }, []);

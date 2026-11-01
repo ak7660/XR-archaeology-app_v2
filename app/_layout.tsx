@@ -12,6 +12,7 @@ import { LanguageProvider } from "@providers/language_provider";
 import { useAppStore } from '@/app/state/app';
 import { observer } from "mobx-react-lite";
 import { PreTestQuestionnaireModal } from "@/components";
+import { useOrientationLock } from "@/app/composable/orientation";
 
 export default function RootLayout() {
   const [loadedFont, error] = useFonts(customFonts);
@@ -42,6 +43,8 @@ export default function RootLayout() {
 const StackLayout = observer(() => {
   const { style } = useAppTheme();
   const store = useAppStore();
+  // Portrait everywhere except the 3D reconstruction, whatever route we land on.
+  useOrientationLock();
   return (
     <>
       <Stack screenOptions={{ headerShown: false }}>
@@ -56,7 +59,6 @@ const StackLayout = observer(() => {
         <Stack.Screen name="detail" />
         <Stack.Screen name="ar/ar_placement" />
         <Stack.Screen name="ar/ar_explore" />
-        <Stack.Screen name="collection" />
       </Stack>
       <PreTestQuestionnaireModal />
       <StatusBar hidden={store.bar_status === 'hidden'} style={style === "dark" ? "light" : "dark"} />

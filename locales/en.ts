@@ -98,6 +98,29 @@ export const en = {
     generic: "Something went wrong. Please try again.",
   },
 
+  favourites: {
+    title: "Favourites",
+    places: "Saved places",
+    models: "AR models",
+    save: "Save to favourites",
+    remove: "Remove from favourites",
+    empty: "Nothing saved yet. Tap the bookmark on a place to keep it here.",
+    browse: "Browse places",
+    guestNote: "Saved on this phone. Sign in to keep them when you change phones.",
+    loadFailed: "Couldn't load your favourites. Pull down to try again.",
+  },
+
+  nearby: {
+    sortNearest: "Nearest first",
+    sorted: "Nearest first",
+    locating: "Finding you…",
+    away: "{distance} away",
+    needPermission: "Turn on location to sort by distance.",
+    openSettings: "Open settings",
+    failed: "Couldn't get your location. Try again outdoors.",
+    noCoordinates: "Location unknown",
+  },
+
   // First screen: sign in, create an account or continue as a guest
   welcome: {
     tagline: "Explore Vedi Fortress and the river valley: augmented-reality reconstructions, walking routes, local events and an AI trip planner.",
@@ -255,6 +278,7 @@ export const en = {
     userEvaluationHint: "The form is embedded below.",
     myBookings: "My bookings",
     myTripPlans: "My trip plans",
+    favourites: "Favourites",
   },
 
   // Language settings

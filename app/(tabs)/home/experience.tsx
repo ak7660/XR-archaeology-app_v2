@@ -6,12 +6,13 @@ import { useAppTheme } from "@/providers/style_provider";
 import { useTranslation } from "@/hooks/useTranslation";
 import { AppBar, ListItem, ListItemProps, MainBody, NAVBAR_HEIGHT } from "@components";
 import { SearchInput } from "@/components/common/search";
-import { SortIcon } from "@/components/icons";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FlatList, TouchableOpacity, View } from "react-native";
 import { ActivityIndicator, Text } from "react-native-paper";
-import { useLocation } from "@/hooks/useLocation";
-import { calculateDistance } from "@/plugins/utils";
+import { useNearby } from "@/hooks/useNearby";
+import NearbySortButton from "@/components/common/nearby_sort";
+import { distanceKm, formatDistance } from "@/app/composable/nearby";
 
 export default function Page() {
   const feathers = useFeathers();
@@ -25,8 +26,7 @@ export default function Page() {
   const [loading, setLoading] = useState(false);
   const [hasScrolled, setScrolled] = useState(false);
   const [search, setSearchText] = useState("");
-  const [isSorted, setIsSorted] = useState(false);
-  const { location: userLocation } = useLocation();
+  const nearby = useNearby();
   const cursor = useRef(0);
   const total = useRef(0);
 
@@ -45,7 +45,7 @@ export default function Page() {
   const searched_list = useMemo(() => {
     const search_text = search.trim().toLowerCase();
     let filtered = items.slice();
-    
+
     if (search_text.length) {
       filtered = filtered.filter((item) => {
         const itemName = item.name[language] ?? item.name.en;
@@ -53,19 +53,8 @@ export default function Page() {
       });
     }
 
-    if (isSorted && userLocation) {
-      filtered.sort((a, b) => {
-        if (!a.latitude || !a.longitude) return 1;
-        if (!b.latitude || !b.longitude) return -1;
-        
-        const distA = calculateDistance(userLocation.latitude, userLocation.longitude, a.latitude, a.longitude);
-        const distB = calculateDistance(userLocation.latitude, userLocation.longitude, b.latitude, b.longitude);
-        return distA - distB;
-      });
-    }
-
-    return filtered;
-  }, [search, items, language, isSorted, userLocation]);
+    return nearby.sort(filtered, (item) => item);
+  }, [search, items, language, nearby.enabled, nearby.position]);
 
   async function syncData() {
     const query = { $skip: cursor.current, $sort: "order" };
@@ -130,22 +119,9 @@ export default function Page() {
               <Text variant="bodyMedium" style={{ color: theme.colors.grey2, marginBottom: theme.spacing.md }}>
                 Armenia has many cultural handicraft. Join workshop to experience!
               </Text>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: theme.spacing.sm }}>
-                <View style={{ flex: 1 }}>
-                  <SearchInput onChangeText={(val) => setSearchText(val)}></SearchInput>
-                </View>
-                <TouchableOpacity 
-                  onPress={() => setIsSorted(!isSorted)}
-                  style={{ 
-                    backgroundColor: isSorted ? theme.colors.primary : theme.colors.surface, 
-                    padding: 10, 
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    borderColor: theme.colors.outline
-                  }}
-                >
-                  <SortIcon fill={isSorted ? theme.colors.onPrimary : theme.colors.onSurface} />
-                </TouchableOpacity>
+              <View style={{ rowGap: theme.spacing.sm }}>
+                <SearchInput onChangeText={(val) => setSearchText(val)}></SearchInput>
+                <NearbySortButton status={nearby.status} onPress={nearby.toggle} />
               </View>
             </View>
           );

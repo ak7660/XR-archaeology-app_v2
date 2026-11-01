@@ -5,6 +5,7 @@ import { ChevronLeftIcon, CircleTickIcon, AddCommentIcon } from "@components/ico
 import { router, useLocalSearchParams } from "expo-router";
 import { useState, useEffect, createRef, useCallback, useRef, useMemo } from "react";
 import * as ScreenOrientation from "expo-screen-orientation";
+import { lockTo } from "@/app/composable/orientation";
 import { View, StyleSheet, useWindowDimensions, Platform, Image, Modal } from "react-native";
 import _ from "lodash";
 import { ActivityIndicator, Button, Text } from "react-native-paper";
@@ -51,11 +52,7 @@ function ARExplorePage() {
   useEffect(() => {
     let cancelled = false;
     async function initViro() {
-      try {
-        await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
-      } catch (_) {
-        // ignore — some devices reject explicit portrait lock; the barrier still worked
-      }
+      await lockTo(ScreenOrientation.OrientationLock.PORTRAIT_UP);
       if (!cancelled) {
         setTimeout(() => { if (!cancelled) setIsViroReady(true); }, 300);
       }
@@ -63,7 +60,6 @@ function ARExplorePage() {
     initViro();
     return () => {
       cancelled = true;
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.DEFAULT).catch(() => {});
     };
   }, []);
 

@@ -7,7 +7,7 @@ import BottomSheet, { BottomSheetScrollView, BottomSheetScrollViewMethods } from
 import { BookmarkIcon, BookmarkOutlineIcon, CreateARIcon, ChevronLeftIcon, ErrorOutlineIcon, ShareIcon } from "@components/icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Artifact, MultilingualText } from "@models";
-import { useAuth } from "@providers/auth_provider";
+import { useCollection } from "@/hooks/useBookmarks";
 import { useFeathers } from "@providers/feathers_provider";
 import _ from "lodash";
 import { useAppTheme } from "@providers/style_provider";
@@ -22,7 +22,6 @@ export default function DetailPage() {
   const params = useLocalSearchParams<{ id?: string }>();
   const [loading, setLoading] = useState(false);
   const [modelError, setModelError] = useState(null);
-  const { user, updateUser } = useAuth();
   const [item, setItem] = useState<Artifact>();
   const [dataLoaded, setDataLoaded] = useState(false);
 
@@ -31,25 +30,16 @@ export default function DetailPage() {
       if (typeof text === "string" || text === undefined) return text;
       return localize(text);
     },
-    [localize]
+    [localize],
   );
 
-  const bookmarksRef = useRef<string[]>(user?.bookmarks ?? []);
-  const [isBookmarked, setIsBookmarked] = useState(bookmarksRef.current.includes(params.id || ""));
+  // 3D models are saved to the AR collection (`collections`), while the bookmark
+  // button on a place saves to `bookmarks`. Both are listed under Account > Favourites.
+  const { isSaved, toggle } = useCollection();
+  const isBookmarked = isSaved(params.id);
 
   const setBookmark = (id?: string) => {
-    if (!id) return;
-    const bookmarks = bookmarksRef.current;
-    const index = bookmarks.indexOf(id);
-    if (index !== -1) {
-      bookmarks.splice(index, 1);
-    } else {
-      bookmarks.push(id);
-    }
-    bookmarksRef.current = bookmarks;
-
-    setIsBookmarked(index === -1);
-    updateUser({ bookmarks: bookmarks });
+    toggle(id);
   };
 
   // ref
